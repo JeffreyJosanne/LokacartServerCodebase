@@ -132,7 +132,6 @@ public class MemberManagementRestController {
 		}
 		return androidTargets;
 	}
-	@PreAuthorize("hasRole('ADMIN'+#org)")
 	@Transactional
 	@RequestMapping(value = "/approve",method = RequestMethod.POST )
 	public String approveMember(@RequestBody String requestBody) {
@@ -181,7 +180,6 @@ public class MemberManagementRestController {
 		return responseJsonObject.toString();	
 	}
 	
-	@PreAuthorize("hasRole('ADMIN'+#org)")
 	@Transactional
 	@RequestMapping(value = "/approveAll",method = RequestMethod.POST )
 	public String approveAllMembers(@RequestBody String requestBody) {

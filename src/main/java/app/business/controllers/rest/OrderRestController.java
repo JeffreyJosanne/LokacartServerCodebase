@@ -181,8 +181,9 @@ public class OrderRestController {
 		}
 		return androidTargets;
 	}
-	@PreAuthorize("hasRole('ADMIN'+#org)")
+	
 	@Transactional
+	
 	@RequestMapping(value = "/orders/add",method = RequestMethod.POST )
 	public HashMap<String,String> addOrders(@RequestBody String requestBody){
 		HashMap<String,String> response= new HashMap<String, String>();
@@ -378,7 +379,6 @@ public class OrderRestController {
 		return response.toString();
 	}
 	
-	@PreAuthorize("hasRole('ADMIN'+#org)")
 	@Transactional
 	@RequestMapping(value = "/orders/updatestatus/{orderId}",method = RequestMethod.GET, produces="text/plain" )
 	public String updateOrderStatus(@PathVariable int orderId)
@@ -413,7 +413,6 @@ public class OrderRestController {
 		return "Success";
 	}
 	
-	@PreAuthorize("hasRole('ADMIN'+#org)")
 	@Transactional
 	@RequestMapping(value="/orders/get", method = RequestMethod.GET)
 	public String displayAllOrders(@RequestParam(value="orgabbr") String orgabbr)
@@ -468,7 +467,6 @@ public class OrderRestController {
 		return jsonResponseObject.toString();
 	}
 	
-	@PreAuthorize("hasRole('ADMIN'+#org)")
 	@Transactional
 	@RequestMapping(value = "/orders/saved",method = RequestMethod.GET )
 	public String displaySavedOrders(@RequestParam(value="orgabbr") String orgabbr)
@@ -521,7 +519,6 @@ public class OrderRestController {
 		return jsonResponseObject.toString();
 	}
 	
-	@PreAuthorize("hasRole('ADMIN'+#org)")
 	@Transactional
 	@RequestMapping(value = "/orders/processed",method = RequestMethod.GET )
 	public String displayProcessedOrders(@RequestParam(value="orgabbr") String orgabbr)
@@ -574,7 +571,6 @@ public class OrderRestController {
 		return jsonResponseObject.toString();
 	}
 	
-	@PreAuthorize("hasRole('ADMIN'+#org)")
 	@Transactional
 	@RequestMapping(value = "/orders/cancelled",method = RequestMethod.GET )
 	public String displayCancelledOrders(@RequestParam(value="orgabbr") String orgabbr)
@@ -627,7 +623,6 @@ public class OrderRestController {
 		return jsonResponseObject.toString();
 	}
 	
-	@PreAuthorize("hasRole('ADMIN'+#org)")
 	@Transactional
 	@RequestMapping(value = "/orders/rejected",method = RequestMethod.GET )
 	public String displayRejectedOrders(@RequestParam(value="orgabbr") String orgabbr)
@@ -702,7 +697,6 @@ public class OrderRestController {
 	return responseJsonObject.toString();
 	}
 	
-	@PreAuthorize("hasRole('ADMIN'+#org)")
 	@Transactional
 	@RequestMapping(value = "/orders/changestate/cancelled/{orderId}",method = RequestMethod.GET )
 	public String changeToCancelledState(@PathVariable int orderId) {
@@ -743,7 +737,6 @@ public class OrderRestController {
 	return responseJsonObject.toString();
 	}
 	
-	@PreAuthorize("hasRole('ADMIN'+#org)")
 	@Transactional
 	@RequestMapping(value = "/orders/changestate/rejected/{orderId}",method = RequestMethod.GET )
 	public String changeToRejectedState(@PathVariable int orderId) {

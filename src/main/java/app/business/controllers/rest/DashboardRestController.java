@@ -7,7 +7,10 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 
+import javax.transaction.Transactional;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -47,6 +50,7 @@ public class DashboardRestController {
 	@Autowired
 	OrganizationMembershipService organizationMembershipService;
 	
+	@Transactional
 	@RequestMapping(value = "/dashboard",method = RequestMethod.GET )
 	public @ResponseBody HashMap<String, Integer> dashBoard(@RequestParam(value="orgabbr") String orgabbr) throws ParseException {
 		System.out.println(orgabbr+"in dahsboard function");
