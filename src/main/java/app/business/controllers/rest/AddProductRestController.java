@@ -3,6 +3,7 @@ package app.business.controllers.rest;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -71,6 +72,7 @@ public class AddProductRestController {
 		return responseJsonObject.toString();
 	}
 	
+	@Transactional
 	@RequestMapping(value ="/product/edit", method = RequestMethod.POST)
 	
 	public String editProduct(@RequestBody String requestBody) {
@@ -117,5 +119,35 @@ public class AddProductRestController {
 			e.printStackTrace();
 		}
 		return responseJsonObject.toString();
+	}
+	
+	@RequestMapping(value ="/product/delete", method = RequestMethod.POST)
+	public String deleteProduct(@RequestBody String requestBody) {
+		JSONObject jsonResponseObject = new JSONObject();
+		String abbr = null, name = null;
+		try{
+			JSONObject object = new JSONObject(requestBody);
+			abbr = object.getString("orgabbr");
+			name = object.getString("name");
+			Organization organization = organizationService.getOrganizationByAbbreviation(abbr);
+			Product product = productService.getProductByNameAndOrg(name, organization);
+			productService.removeProduct(product);
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+			try {
+				jsonResponseObject.put("result", "Failed to delete");
+				return jsonResponseObject.toString();
+			} catch (JSONException e1) {
+				e1.printStackTrace();
+			}
+		}
+		try {
+			jsonResponseObject.put("result", "Delete successful");
+		} catch (JSONException e) {
+			e.printStackTrace();
+		}
+		return jsonResponseObject.toString();
 	}
 }

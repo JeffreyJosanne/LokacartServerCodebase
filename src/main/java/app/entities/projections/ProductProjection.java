@@ -11,7 +11,7 @@ public interface ProductProjection {
 	  int getProductId();
 	  String getDescription();
 	  String getImageUrl();
-	  int getQuantity();
+	  float getQuantity();
 	  float getUnitRate();
 	  ProductType getProductType();
 	 

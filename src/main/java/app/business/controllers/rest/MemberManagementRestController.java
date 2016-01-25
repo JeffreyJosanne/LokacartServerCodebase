@@ -1,4 +1,4 @@
-package app.business.controllers;
+package app.business.controllers.rest;
 
 import java.sql.Timestamp;
 import java.text.ParseException;
@@ -8,22 +8,17 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.stereotype.Controller;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 
-import app.business.controllers.rest.DashboardRestController;
 import app.business.services.GcmTokensService;
-import app.business.services.GroupMembershipService;
 import app.business.services.OrganizationMembershipService;
 import app.business.services.OrganizationService;
 import app.business.services.UserPhoneNumberService;
@@ -31,29 +26,24 @@ import app.business.services.UserService;
 import app.business.services.message.MessageService;
 import app.entities.GcmTokens;
 import app.entities.Group;
-import app.entities.GroupMembership;
 import app.entities.Organization;
 import app.entities.OrganizationMembership;
 import app.entities.User;
 import app.entities.message.Message;
 import app.util.GcmRequest;
-import app.util.SendMail;
 
-@Controller
-@RequestMapping("/web/{org}")
-public class HomeController {
-
-	@Autowired
-	OrganizationService organizationService;
+@RestController
+@RequestMapping("/app")
+public class MemberManagementRestController {
 	
 	@Autowired
 	OrganizationMembershipService organizationMembershipService;
 	
 	@Autowired
-	UserService userService;
+	OrganizationService organizationService;
 	
 	@Autowired
-	GroupMembershipService groupMembershipService;
+	UserService userService;
 	
 	@Autowired
 	UserPhoneNumberService userPhoneNumberService;
@@ -63,7 +53,6 @@ public class HomeController {
 	
 	@Autowired
 	MessageService messageService;
-	
 	
 	public HashMap<String, Integer> dashBoardLocal(String orgabbr) throws ParseException {
 
@@ -113,9 +102,6 @@ public class HomeController {
 		return dashmap;
 	}
 	
-	
-	
-	
 	public List <String> getTargetDevices (Organization organization)  {
 		List<OrganizationMembership> organizationMembership = organizationMembershipService.getOrganizationMembershipListByIsAdmin(organization, true);
 		List<String> phoneNumbers = new ArrayList<String>();
@@ -143,73 +129,100 @@ public class HomeController {
 		}
 		return androidTargets;
 	}
-
-	@RequestMapping(value="/homePage")
-	@PreAuthorize("hasRole('ADMIN'+#org)")
-	public String homePage(@PathVariable String org, Model model) {
-		Organization organization = organizationService.getOrganizationByAbbreviation(org);
-		model.addAttribute("organization",organization);
-		return "home";
-	}
-	@RequestMapping(value="/homePage/approve", method = RequestMethod.POST)
-	@PreAuthorize("hasRole('ADMIN'+#org)")
-	@Transactional
-	@ResponseBody
-	public void approveUser(@PathVariable String org, @RequestBody Map<String,String> userDetails) {
-		Organization organization = organizationService.getOrganizationByAbbreviation(org);
-		int userId = Integer.parseInt(userDetails.get("userid"));
-		String phoneno= userDetails.get("phno");
+	
+	@RequestMapping(value = "/approve",method = RequestMethod.POST )
+	public String approveMember(@RequestBody String requestBody) {
+		JSONObject responseJsonObject = new JSONObject();
+		String organizationabbr = null;
+		Organization organization = null;
+		int userId = 0;
+		try{
+			JSONObject object = new JSONObject(requestBody);
+			organizationabbr = object.getString("orgabbr");
+			userId = object.getInt("userId");
+		}
+		catch(JSONException e) {
+			e.printStackTrace();
+		}
+		try {
+		organization = organizationService.getOrganizationByAbbreviation(organizationabbr);
 		User user = userService.getUser(userId);
-		OrganizationMembership membership= organizationMembershipService.getUserOrganizationMembership(user, organization);
-		membership.setStatus(1);
-		organizationMembershipService.addOrganizationMembership(membership);
-		if(organization.getName().equalsIgnoreCase("Nature's Gram"))
-			SendMail.sendMail(user.getEmail(), "Cottage Industry app Organization Approval" , "Congratualtions!!! You have been approved by "+organization.getName()+" organization.\n\nThank You for being part of our community. You are now ready to place an order.\n\nWishing you Health and Happiness always.\n\nFor support call : 9930332255\nOr mail us at : vishal@naturesgram.com\n\nThanks & Regards\nVishal V Ghodke\nFounder - Natures Gram\nwww.naturesgram.com\nfacebook.com/naturesgram" );
-		else
-			SendMail.sendMail(user.getEmail(), "Cottage Industry app Organization Approval" , "Congratualtions!!! You have been approved by "+organization.getName()+" organization.\n\nThank You for being part of our community. You are now ready to place an order.\n\nWishing you Health and Happiness always.");
-			
-		String orgabbr = organization.getAbbreviation();
-		List <String> androidTargets = getTargetDevices(organization);
-		if(androidTargets.size()>0) {
+		OrganizationMembership organizationMembership = organizationMembershipService.getUserOrganizationMembership(user, organization);
+		organizationMembership.setStatus(1);
+		organizationMembershipService.addOrganizationMembership(organizationMembership);
+		}
+		catch (Exception e) {
+			try {
+				responseJsonObject.put("response", "Failed");
+				return responseJsonObject.toString();
+			} catch (JSONException e1) {
+				e1.printStackTrace();
+			}
+		}
+		try {
+			responseJsonObject.put("response", "Member Approved");
+		} catch (JSONException e) {
+			e.printStackTrace();
+		}
+		List<String > androidTargets = getTargetDevices(organization);
+		if(androidTargets.size() > 0) {
 			GcmRequest gcmRequest = new GcmRequest();
-			gcmRequest.broadcast(user.getName()+" would like to be a member", "New Member Request", androidTargets,1,user.getUserId());
 			HashMap<String, Integer> dashData = null;
 			try {
-				dashData = dashBoardLocal(orgabbr);
+				dashData = dashBoardLocal(organizationabbr);
 			} catch (ParseException e) {
 				e.printStackTrace();
 			}
-			gcmRequest.broadcast(androidTargets,orgabbr,dashData);				}
-		//IVRUtils.sendSMS(phoneno, "Congratualtions!!! You have been approved by "+organization.getName()+" organization.",null,null);
+			gcmRequest.broadcast(androidTargets,organizationabbr,dashData);					}
+		return responseJsonObject.toString();	
 	}
 	
-	@RequestMapping(value="/homePage/reject", method = RequestMethod.POST)
-	@PreAuthorize("hasRole('ADMIN'+#org)")
-	@Transactional
-	@ResponseBody
-	public void rejectUser(@PathVariable String org, @RequestBody Map<String,String> userDetails) {
-		Organization organization = organizationService.getOrganizationByAbbreviation(org);
-		int userId = Integer.parseInt(userDetails.get("userid"));
-		String phoneno= userDetails.get("phno");
-		User user = userService.getUser(userId);
-		for(GroupMembership groupMembership: user.getGroupMemberships()) {
-			if(groupMembership.getGroup().getOrganization().getName().equals(organization.getName()))
-				groupMembershipService.removeGroupMembership(groupMembership);
-		}
+	
+	@RequestMapping(value = "/approveAll",method = RequestMethod.POST )
+	public String approveAllMembers(@RequestBody String requestBody) {
 		
-		OrganizationMembership organizationMembership= organizationMembershipService.getUserOrganizationMembership(user, organization);
-		organizationMembershipService.removeOrganizationMembership(organizationMembership);
-		String orgabbr = organization.getAbbreviation();
-		List <String> androidTargets = getTargetDevices(organization);
-		if(androidTargets.size()>0) {
+		JSONObject responseJsonObject = new JSONObject();
+		String organizationabbr = null;
+		Organization organization = null;
+		try {
+			JSONObject object = new JSONObject(requestBody);
+			organizationabbr = object.getString("orgabbr");
+			organization = organizationService.getOrganizationByAbbreviation(organizationabbr);
+			JSONArray jsonArray = object.getJSONArray("userIds");
+			for(int i=0; i < jsonArray.length();i++) {
+				int userId = jsonArray.getInt(i);
+				User user = userService.getUser(userId);
+				OrganizationMembership organizationMembership = organizationMembershipService.getUserOrganizationMembership(user, organization);
+				organizationMembership.setStatus(1);
+				organizationMembershipService.addOrganizationMembership(organizationMembership);
+				
+			}
+		}
+		catch(Exception e) {
+			try {
+				e.printStackTrace();
+				responseJsonObject.put("response", "Failed");
+				return responseJsonObject.toString();
+			} catch (JSONException e1) {
+				e1.printStackTrace();
+			}
+		}
+		try {
+			responseJsonObject.put("response", "Members Approved");
+		} catch (JSONException e) {
+			e.printStackTrace();
+		}
+		List<String > androidTargets = getTargetDevices(organization);
+		if(androidTargets.size() > 0) {
 			GcmRequest gcmRequest = new GcmRequest();
-			gcmRequest.broadcast(user.getName()+" would like to be a member", "New Member Request", androidTargets,1,user.getUserId());
 			HashMap<String, Integer> dashData = null;
 			try {
-				dashData = dashBoardLocal(orgabbr);
+				dashData =dashBoardLocal(organizationabbr);
 			} catch (ParseException e) {
 				e.printStackTrace();
 			}
-			gcmRequest.broadcast(androidTargets,orgabbr,dashData);				}
+			gcmRequest.broadcast(androidTargets,organizationabbr,dashData);					}
+		return responseJsonObject.toString();	
 	}
+	
 }

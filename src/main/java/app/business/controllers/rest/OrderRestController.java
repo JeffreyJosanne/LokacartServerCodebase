@@ -1,7 +1,10 @@
 package app.business.controllers.rest;
 
 import java.sql.Timestamp;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -18,10 +21,13 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import app.business.services.GcmTokensService;
 import app.business.services.OrderService;
+import app.business.services.OrganizationMembershipService;
 import app.business.services.OrganizationService;
 import app.business.services.PresetQuantityService;
 import app.business.services.ProductService;
+import app.business.services.UserPhoneNumberService;
 import app.business.services.UserService;
 import app.business.services.message.MessageService;
 import app.data.repositories.BillLayoutSettingsRepository;
@@ -31,13 +37,18 @@ import app.data.repositories.OrderItemRepository;
 import app.data.repositories.OrderRepository;
 import app.data.repositories.OrganizationRepository;
 import app.entities.BillLayoutSettings;
+import app.entities.GcmTokens;
+import app.entities.Group;
 import app.entities.Order;
 import app.entities.OrderItem;
 import app.entities.Organization;
+import app.entities.OrganizationMembership;
 import app.entities.PresetQuantity;
 import app.entities.Product;
+import app.entities.User;
 import app.entities.message.BinaryMessage;
 import app.entities.message.Message;
+import app.util.GcmRequest;
 import app.util.SendBill;
 import app.util.SendMail;
 
@@ -80,6 +91,93 @@ public class OrderRestController {
 	
 	@Autowired
 	BillLayoutSettingsRepository billLayoutSettingsRepository;
+	
+	@Autowired 
+	UserPhoneNumberService userPhoneNumberService;
+	
+	@Autowired
+	OrganizationMembershipService organizationMembershipService;
+	
+	@Autowired
+	GcmTokensService gcmTokensService;
+	
+	
+		public HashMap<String, Integer> dashBoardLocal(String orgabbr) throws ParseException {
+
+		Organization organization = organizationService.getOrganizationByAbbreviation("Test2");
+		Group g= organizationService.getParentGroup(organization);
+		List<Message> messageapppro=messageService.getMessageListByOrderStatus(g, "binary", "processed");
+		List<Message> messageappnew=messageService.getMessageListByOrderStatus(g, "binary", "saved");
+		List<Message> messageappcan=messageService.getMessageListByOrderStatus(g, "binary", "cancelled");
+		HashMap<String, Integer> dashmap = new HashMap<String, Integer>();
+		dashmap.put("saved", messageappnew.size());
+		dashmap.put("processed", messageapppro.size());
+		dashmap.put("cancelled", messageappcan.size());
+		
+		List<OrganizationMembership> membershipListpending = organizationMembershipService.getOrganizationMembershipListByStatus(organization, 0);
+		List<OrganizationMembership> membershipListapproved = organizationMembershipService.getOrganizationMembershipListByStatus(organization, 1);
+		dashmap.put("totalUsers", membershipListpending.size()+membershipListapproved.size());
+		dashmap.put("pendingUsers", membershipListpending.size());
+		int todayUsers=0;
+		for(OrganizationMembership membership : membershipListpending)
+		{
+
+			User user = membership.getUser();
+		
+			try
+			{
+				Timestamp time = user.getTime();
+				
+				Calendar cal= Calendar.getInstance();
+				cal.clear(Calendar.HOUR_OF_DAY);
+				cal.clear(Calendar.AM_PM);
+				cal.clear(Calendar.MINUTE);
+				cal.clear(Calendar.SECOND);
+				cal.clear(Calendar.MILLISECOND);
+				SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");      
+			    java.util.Date dateWithoutTime = sdf.parse(sdf.format(new java.util.Date()));
+				if(time.after(dateWithoutTime))
+				{
+					todayUsers=todayUsers+1;
+				}
+			}
+			catch(NullPointerException | ParseException e)
+			{
+				System.out.println("User name not having his timestamp recorded is: " + user.getName() + " having userID: " + user.getUserId());
+			}
+		}
+		dashmap.put("newUsersToday",todayUsers);
+		return dashmap;
+	}
+	
+	public List <String> getTargetDevices (Organization organization)  {
+			
+		List<OrganizationMembership> organizationMembership = organizationMembershipService.getOrganizationMembershipListByIsAdmin(organization, true);
+		List<String> phoneNumbers = new ArrayList<String>();
+		Iterator <OrganizationMembership> membershipIterator = organizationMembership.iterator();
+		while (membershipIterator.hasNext()) {
+			OrganizationMembership membership = membershipIterator.next();
+			User user = membership.getUser();
+			phoneNumbers.add(userPhoneNumberService.getUserPrimaryPhoneNumber(user).getPhoneNumber());
+		}
+		Iterator <String> iterator = phoneNumbers.iterator();
+		List <String>androidTargets = new ArrayList<String>();
+		while(iterator.hasNext()) {
+			String number = iterator.next();
+			try{
+			List<GcmTokens> gcmTokens = gcmTokensService.getListByPhoneNumber(number);
+			Iterator <GcmTokens> iter = gcmTokens.iterator();
+			while(iter.hasNext()) {
+			
+			androidTargets.add(iter.next().getToken());
+			}
+			}
+			catch(Exception e){
+				System.out.println("no token for number: "+number);
+			}
+		}
+		return androidTargets;
+	}
 	
 	@RequestMapping(value = "/orders/add",method = RequestMethod.POST )
 	public HashMap<String,String> addOrders(@RequestBody String requestBody){
@@ -134,11 +232,26 @@ public class OrderRestController {
 		response.put("orderId",new Integer(order.getOrderId()).toString());
 		response.put("Status", "Success");
 		String email=order.getMessage().getUser().getEmail();
+		List <String> androidTargets = getTargetDevices(organization);
+		if(androidTargets.size()>0) {
+		GcmRequest gcmRequest = new GcmRequest();
+		HashMap<String,Integer>dashData = null;
+		try {
+			dashData = dashBoardLocal(organizationabbr);
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
+		gcmRequest.broadcast(userService.getCurrentUser().getName()+" has placed an order", "New order", androidTargets,0);
+		System.out.println(organizationabbr);
+		gcmRequest.broadcast(androidTargets,organizationabbr,dashData);
+		}
 		SendMail.sendMail(email, "Cottage Industry App: Order Placed Successfully" , "Your order has been placed successfully with order id is: " + new Integer(order.getOrderId()).toString());
 		if(organization.getAbbreviation().equals("NatG"))
 			SendMail.sendMail("vishalghodke@gmail.com", "Cottage Industry App: Order Placed", "Dear Admin,\nCustomer "+order.getMessage().getUser().getName()+" has placed an order of order id "+order.getOrderId()+".\n\nThankyou\nLokacart Team\n");
 		return response;
 	}
+
+	
 
 	@RequestMapping(value = "/orders/update/{orderId}",method = RequestMethod.POST ,produces="application/json" )
 	public String updateOrders(@PathVariable int orderId,@RequestBody String requestBody)
@@ -171,6 +284,15 @@ public class OrderRestController {
 		}	
 		Order order = orderRepository.findOne(orderId);
 		Organization organization= order.getOrganization();
+		String organizationabbr = organization.getAbbreviation();
+		if( order.getStatus().equals("processed")) {
+			try {
+				response.put("Status", "Order cannot be cancelled. Please sync app immediately");
+			} catch (JSONException e) {
+				e.printStackTrace();
+			}
+			return response.toString();
+		}
 		//Will be used later when comments are added while ordering.
 		if(!comments.equals("null"))
 		{
@@ -236,6 +358,18 @@ public class OrderRestController {
 		} catch (JSONException e) {
 			e.printStackTrace();
 		}
+		List <String> androidTargets = getTargetDevices(organization);
+		if(androidTargets.size() > 0) {
+			GcmRequest gcmRequest = new GcmRequest();
+	
+			HashMap<String, Integer> dashData = null;
+			try {
+				dashData = dashBoardLocal(organizationabbr);
+			} catch (ParseException e) {
+				e.printStackTrace();
+			}
+			gcmRequest.broadcast(androidTargets,organizationabbr,dashData);			
+			}
 		return response.toString();
 	}
 	
@@ -245,6 +379,7 @@ public class OrderRestController {
 		System.out.println("In update status with order id = "+orderId);
 		Order order = orderRepository.findOne(orderId);
 		Organization organization= order.getOrganization();
+		String organizationabbr = organization.getAbbreviation();
 		if(order.getStatus().equals("processed"))
 		{
 			System.out.println("In processed");
@@ -257,16 +392,80 @@ public class OrderRestController {
 			SendMail.sendMail(order.getMessage().getUser().getEmail(), "Cottage Industry App: Order recieved", "Organization "+organization.getName()+" has recieved your order. Order processing might take couple of days. Once your order is processed, you will receive an email confirming the same.\n\n Thank you for shopping with us.");
 		}
 		System.out.println("Mail sent");
+		List <String> androidTargets = getTargetDevices(organization);
+		if(androidTargets.size() > 0) {
+			GcmRequest gcmRequest = new GcmRequest();
+
+			HashMap<String, Integer> dashData = null;
+			try {
+				dashData = dashBoardLocal(organizationabbr);
+			} catch (ParseException e) {
+				e.printStackTrace();
+			}
+			gcmRequest.broadcast(androidTargets,organizationabbr,dashData);			}
 		return "Success";
+	}
+	
+	
+	@RequestMapping(value="/orders/get", method = RequestMethod.GET)
+	public String displayAllOrders(@RequestParam(value="orgabbr") String orgabbr)
+	{
+		JSONObject jsonResponseObject = new JSONObject();
+		JSONArray savedArray = new JSONArray();
+		JSONArray processedArray = new JSONArray();
+		JSONArray cancelledArray = new JSONArray();
+		Organization organization =organizationService.getOrganizationByAbbreviation(orgabbr);
+		List<Order> orderList = orderService.getOrderByOrganization(organization);
+		Iterator <Order> iterator = orderList.iterator();
+		while(iterator.hasNext()) {
+			Order order = iterator.next();
+			Message message = messageService.getMessageFromOrder(order);
+			JSONObject orderObject = new JSONObject();
+			if(message != null){
+				try {
+					orderObject.put("orderid",order.getOrderId());
+					orderObject.put("timestamp", message.getTime().toString());
+					orderObject.put("username", userService.getUser(message.getUser().getUserId()).getName());
+					orderObject.put("comment", message.getComments());
+					if(order.getStatus().equals("saved")){
+						savedArray.put(orderObject);
+					}
+					else if (order.getStatus().equals("processed")){
+						processedArray.put(orderObject);
+					}
+					else if (order.getStatus().equals("cancelled")) {
+						cancelledArray.put(orderObject);
+					}
+				} catch (JSONException e) {
+					e.printStackTrace();
+				}
+				}
+			
+		}
+		try{
+		jsonResponseObject.put("saved", savedArray);
+		jsonResponseObject.put("processed", processedArray);
+		jsonResponseObject.put("cancelled", cancelledArray);
+		jsonResponseObject.put("response", "success");
+		}
+		catch(JSONException e){
+			e.printStackTrace();
+			try {
+				jsonResponseObject.put("response", "error");
+			} catch (JSONException e1) {
+				e1.printStackTrace();
+			}
+			return jsonResponseObject.toString();
+		}
+		return jsonResponseObject.toString();
 	}
 	
 	@RequestMapping(value = "/orders/saved",method = RequestMethod.GET )
 	public String displaySavedOrders(@RequestParam(value="orgabbr") String orgabbr)
 	{
-		
+		JSONObject jsonResponseObject = new JSONObject();
 		Organization organization =organizationService.getOrganizationByAbbreviation(orgabbr);
 		List<Order> orderList = orderService.getOrderByOrganizationSaved(organization);
-		JSONObject jsonResponseObject = new JSONObject();
 		JSONArray orderArray = new JSONArray();
 		Iterator<Order> iterator = orderList.iterator();
 		while(iterator.hasNext())
@@ -280,6 +479,24 @@ public class OrderRestController {
 				orderObject.put("timestamp", message.getTime().toString());
 				orderObject.put("username", userService.getUser(message.getUser().getUserId()).getName());
 				orderObject.put("comment", message.getComments());
+				JSONArray items = new JSONArray();
+				List<OrderItem> orderItems = order.getOrderItems();
+				Iterator<OrderItem> iter = orderItems.iterator();
+				while(iter.hasNext()){
+					OrderItem orderItem = iter.next();
+					JSONObject item = new JSONObject();
+					try {
+				
+						item.put("productname", orderItem.getProduct().getName());
+						item.put("quantity", Float.toString(orderItem.getQuantity()));
+						item.put("rate", Float.toString(orderItem.getUnitRate()));
+						items.put(item);
+					} catch (JSONException e) {
+						e.printStackTrace();
+					}
+					items.put(item);
+				}
+				orderObject.put("items", items);
 				orderArray.put(orderObject);
 			} catch (JSONException e) {
 				e.printStackTrace();
@@ -314,6 +531,23 @@ public class OrderRestController {
 				orderObject.put("timestamp", message.getTime().toString());
 				orderObject.put("username", userService.getUser(message.getUser().getUserId()).getName());
 				orderObject.put("comment", message.getComments());
+				JSONArray items = new JSONArray();
+				List<OrderItem> orderItems = order.getOrderItems();
+				Iterator<OrderItem> iter = orderItems.iterator();
+				while(iter.hasNext()){
+					OrderItem orderItem = iter.next();
+					JSONObject item = new JSONObject();
+					try {
+						item.put("productname", orderItem.getProduct().getName());
+						item.put("quantity", Float.toString(orderItem.getQuantity()));
+						item.put("rate", Float.toString(orderItem.getUnitRate()));
+						items.put(item);
+					} catch (JSONException e) {
+						e.printStackTrace();
+					}
+					items.put(item);
+				}
+				orderObject.put("items", items);
 				orderArray.put(orderObject);
 			} catch (JSONException e) {
 				e.printStackTrace();
@@ -348,6 +582,23 @@ public class OrderRestController {
 				orderObject.put("timestamp", message.getTime().toString());
 				orderObject.put("username", userService.getUser(message.getUser().getUserId()).getName());
 				orderObject.put("comment", message.getComments());
+				JSONArray items = new JSONArray();
+				List<OrderItem> orderItems = order.getOrderItems();
+				Iterator<OrderItem> iter = orderItems.iterator();
+				while(iter.hasNext()){
+					OrderItem orderItem = iter.next();
+					JSONObject item = new JSONObject();
+					try {
+						item.put("productname", orderItem.getProduct().getName());
+						item.put("quantity", Float.toString(orderItem.getQuantity()));
+						item.put("rate", Float.toString(orderItem.getUnitRate()));
+						items.put(item);
+					} catch (JSONException e) {
+						e.printStackTrace();
+					}
+					items.put(item);
+				}
+				orderObject.put("items", items);
 				orderArray.put(orderObject);
 			} catch (JSONException e) {
 				e.printStackTrace();
@@ -393,6 +644,7 @@ public class OrderRestController {
 		} catch (JSONException e) {
 			e.printStackTrace();
 		}
+		
 		return jsonResponseObject.toString();
 	}
 	
@@ -401,6 +653,8 @@ public class OrderRestController {
 		JSONObject responseJsonObject = new JSONObject();
 		Order order = orderService.getOrder(orderId);
 		order.setStatus("processed");
+		Organization organization = order.getOrganization();
+		String organizationabbr = organization.getAbbreviation();
 		try {
 		orderService.processOrder(order);
 		}
@@ -418,6 +672,16 @@ public class OrderRestController {
 	} catch (JSONException e) {
 		e.printStackTrace();
 	}	
+	List <String> androidTargets = getTargetDevices(organization);
+	if(androidTargets.size() > 0) {
+		GcmRequest gcmRequest = new GcmRequest();
+		HashMap<String, Integer> dashData = null;
+		try {
+			dashData = dashBoardLocal(organizationabbr);
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
+		gcmRequest.broadcast(androidTargets,organizationabbr,dashData);		}
 	return responseJsonObject.toString();
 	}
 	
@@ -426,6 +690,8 @@ public class OrderRestController {
 		JSONObject responseJsonObject = new JSONObject();
 		Order order = orderService.getOrder(orderId);
 		order.setStatus("cancelled");
+		Organization organization = order.getOrganization();
+		String organizationabbr = organization.getAbbreviation();
 		try {
 		orderService.cancelOrder(order);
 		}
@@ -443,6 +709,18 @@ public class OrderRestController {
 	} catch (JSONException e) {
 		e.printStackTrace();
 	}	
+	List <String> androidTargets = getTargetDevices(organization);
+	if(androidTargets.size() > 0) {
+		GcmRequest gcmRequest = new GcmRequest();
+	
+		HashMap<String, Integer> dashData = null;
+		try {
+			dashData = dashBoardLocal(organizationabbr);
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
+		gcmRequest.broadcast(androidTargets,organizationabbr,dashData);
+		}
 	return responseJsonObject.toString();
 	}
 	
@@ -451,6 +729,8 @@ public class OrderRestController {
 		JSONObject responseJsonObject = new JSONObject();
 		Order order = orderService.getOrder(orderId);
 		order.setStatus("rejected");
+		Organization organization = order.getOrganization();
+		String organizationabbr = organization.getAbbreviation();
 		try {
 		orderService.rejectOrder(order);
 		}
@@ -468,6 +748,18 @@ public class OrderRestController {
 	} catch (JSONException e) {
 		e.printStackTrace();
 	}	
+	
+	List <String> androidTargets = getTargetDevices(organization);
+	if(androidTargets.size() > 0) {
+	GcmRequest gcmRequest = new GcmRequest();
+	HashMap<String, Integer> dashData = null;
+	try {
+		dashData = dashBoardLocal(organizationabbr);
+	} catch (ParseException e) {
+		e.printStackTrace();
+	}
+	gcmRequest.broadcast(androidTargets,organizationabbr,dashData);
+	}
 	return responseJsonObject.toString();
 	}
 	
@@ -486,8 +778,8 @@ public class OrderRestController {
 			JSONObject item = new JSONObject();
 			try {
 				item.put("productname", orderItem.getProduct().getName());
-				item.put("quantity", orderItem.getQuantity());
-				item.put("rate", orderItem.getUnitRate());
+				item.put("quantity", Float.toString(orderItem.getQuantity()));
+				item.put("rate", Float.toString(orderItem.getUnitRate()));
 				items.put(item);
 			} catch (JSONException e) {
 				e.printStackTrace();
@@ -527,4 +819,6 @@ public class OrderRestController {
 		return jsonResponseObject.toString();
 		
 	}
+	 
+	
 }

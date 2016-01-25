@@ -8,8 +8,10 @@ import java.util.HashMap;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -26,6 +28,8 @@ import app.entities.OrganizationMembership;
 import app.entities.User;
 import app.entities.message.Message;
 
+@RestController
+@RequestMapping("/api")
 public class DashboardRestController {
 
 	@Autowired
@@ -43,8 +47,10 @@ public class DashboardRestController {
 	@Autowired
 	OrganizationMembershipService organizationMembershipService;
 	
-	public @ResponseBody HashMap<String, Integer> dashBoard(int orgId) throws ParseException {
-		Organization organization = organizationService.getOrganizationById(orgId);
+	@RequestMapping(value = "/dashboard",method = RequestMethod.GET )
+	public @ResponseBody HashMap<String, Integer> dashBoard(@RequestParam(value="orgabbr") String orgabbr) throws ParseException {
+		System.out.println(orgabbr+"in dahsboard function");
+		Organization organization = organizationService.getOrganizationByAbbreviation("Test2");
 		Group g= organizationService.getParentGroup(organization);
 		List<Message> messageapppro=messageService.getMessageListByOrderStatus(g, "binary", "processed");
 		List<Message> messageappnew=messageService.getMessageListByOrderStatus(g, "binary", "saved");
@@ -87,6 +93,7 @@ public class DashboardRestController {
 			}
 		}
 		dashmap.put("newUsersToday",todayUsers);
+		System.out.println(dashmap.toString());
 		return dashmap;
 	}
 }

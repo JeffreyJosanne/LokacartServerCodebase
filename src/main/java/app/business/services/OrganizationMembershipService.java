@@ -68,4 +68,8 @@ public class OrganizationMembershipService {
 	public OrganizationMembership getOrganizationMembershipByUserAndIsAdmin(User user, boolean isAdmin) {
 		return origanizationMembershipRepository.findByUserAndIsAdmin(user, isAdmin);
 	}
+	
+	public List<OrganizationMembership> getOrganizationMembershipListByIsAdmin(Organization organization, boolean isAdmin) {
+		return origanizationMembershipRepository.findByOrganizationAndIsAdmin(organization, isAdmin);
+	}
 }

@@ -58,4 +58,7 @@ public interface OrganizationMembershipRepository extends JpaRepository<Organiza
 	public List<OrganizationMembership> findByOrganizationAndStatus(Organization organization, int status);
 	
 	public OrganizationMembership findByUserAndIsAdmin(User user, boolean isAdmin);
+	
+
+	public List<OrganizationMembership> findByOrganizationAndIsAdmin(Organization organization, boolean isAdmin);
 }
