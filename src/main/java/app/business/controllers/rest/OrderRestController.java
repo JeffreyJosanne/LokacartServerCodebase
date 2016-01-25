@@ -10,10 +10,13 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
+import javax.transaction.Transactional;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -178,7 +181,8 @@ public class OrderRestController {
 		}
 		return androidTargets;
 	}
-	
+	@PreAuthorize("hasRole('ADMIN'+#org)")
+	@Transactional
 	@RequestMapping(value = "/orders/add",method = RequestMethod.POST )
 	public HashMap<String,String> addOrders(@RequestBody String requestBody){
 		HashMap<String,String> response= new HashMap<String, String>();
@@ -253,6 +257,7 @@ public class OrderRestController {
 
 	
 
+	@Transactional
 	@RequestMapping(value = "/orders/update/{orderId}",method = RequestMethod.POST ,produces="application/json" )
 	public String updateOrders(@PathVariable int orderId,@RequestBody String requestBody)
 	{
@@ -373,6 +378,8 @@ public class OrderRestController {
 		return response.toString();
 	}
 	
+	@PreAuthorize("hasRole('ADMIN'+#org)")
+	@Transactional
 	@RequestMapping(value = "/orders/updatestatus/{orderId}",method = RequestMethod.GET, produces="text/plain" )
 	public String updateOrderStatus(@PathVariable int orderId)
 	{
@@ -406,7 +413,8 @@ public class OrderRestController {
 		return "Success";
 	}
 	
-	
+	@PreAuthorize("hasRole('ADMIN'+#org)")
+	@Transactional
 	@RequestMapping(value="/orders/get", method = RequestMethod.GET)
 	public String displayAllOrders(@RequestParam(value="orgabbr") String orgabbr)
 	{
@@ -460,6 +468,8 @@ public class OrderRestController {
 		return jsonResponseObject.toString();
 	}
 	
+	@PreAuthorize("hasRole('ADMIN'+#org)")
+	@Transactional
 	@RequestMapping(value = "/orders/saved",method = RequestMethod.GET )
 	public String displaySavedOrders(@RequestParam(value="orgabbr") String orgabbr)
 	{
@@ -511,6 +521,8 @@ public class OrderRestController {
 		return jsonResponseObject.toString();
 	}
 	
+	@PreAuthorize("hasRole('ADMIN'+#org)")
+	@Transactional
 	@RequestMapping(value = "/orders/processed",method = RequestMethod.GET )
 	public String displayProcessedOrders(@RequestParam(value="orgabbr") String orgabbr)
 	{
@@ -562,6 +574,8 @@ public class OrderRestController {
 		return jsonResponseObject.toString();
 	}
 	
+	@PreAuthorize("hasRole('ADMIN'+#org)")
+	@Transactional
 	@RequestMapping(value = "/orders/cancelled",method = RequestMethod.GET )
 	public String displayCancelledOrders(@RequestParam(value="orgabbr") String orgabbr)
 	{
@@ -613,6 +627,8 @@ public class OrderRestController {
 		return jsonResponseObject.toString();
 	}
 	
+	@PreAuthorize("hasRole('ADMIN'+#org)")
+	@Transactional
 	@RequestMapping(value = "/orders/rejected",method = RequestMethod.GET )
 	public String displayRejectedOrders(@RequestParam(value="orgabbr") String orgabbr)
 	{
@@ -647,6 +663,7 @@ public class OrderRestController {
 		
 		return jsonResponseObject.toString();
 	}
+	
 	
 	@RequestMapping(value = "/orders/changestate/processed/{orderId}",method = RequestMethod.GET )
 	public String changeToProcessedState(@PathVariable int orderId) {
@@ -685,6 +702,8 @@ public class OrderRestController {
 	return responseJsonObject.toString();
 	}
 	
+	@PreAuthorize("hasRole('ADMIN'+#org)")
+	@Transactional
 	@RequestMapping(value = "/orders/changestate/cancelled/{orderId}",method = RequestMethod.GET )
 	public String changeToCancelledState(@PathVariable int orderId) {
 		JSONObject responseJsonObject = new JSONObject();
@@ -724,6 +743,8 @@ public class OrderRestController {
 	return responseJsonObject.toString();
 	}
 	
+	@PreAuthorize("hasRole('ADMIN'+#org)")
+	@Transactional
 	@RequestMapping(value = "/orders/changestate/rejected/{orderId}",method = RequestMethod.GET )
 	public String changeToRejectedState(@PathVariable int orderId) {
 		JSONObject responseJsonObject = new JSONObject();

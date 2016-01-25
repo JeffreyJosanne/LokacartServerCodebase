@@ -9,10 +9,13 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
+import javax.transaction.Transactional;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -129,7 +132,8 @@ public class MemberManagementRestController {
 		}
 		return androidTargets;
 	}
-	
+	@PreAuthorize("hasRole('ADMIN'+#org)")
+	@Transactional
 	@RequestMapping(value = "/approve",method = RequestMethod.POST )
 	public String approveMember(@RequestBody String requestBody) {
 		JSONObject responseJsonObject = new JSONObject();
@@ -177,7 +181,8 @@ public class MemberManagementRestController {
 		return responseJsonObject.toString();	
 	}
 	
-	
+	@PreAuthorize("hasRole('ADMIN'+#org)")
+	@Transactional
 	@RequestMapping(value = "/approveAll",method = RequestMethod.POST )
 	public String approveAllMembers(@RequestBody String requestBody) {
 		
