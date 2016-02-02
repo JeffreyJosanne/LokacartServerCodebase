@@ -71,13 +71,16 @@ public class GcmRestController {
 		try{
 		tokenDetails = new JSONObject(requestBody);
 		token = tokenDetails.getString("token");
+		System.out.println(token);
 		GcmTokens gcmToken = gcmTokensService.getByToken(token);
 		gcmTokensService.removeToken(gcmToken);
+		
 		}
 		catch(Exception e) {
 			System.out.println("Token remove failed");
 			try {
 				jsonResponseObject.put("response", "fail");
+				return jsonResponseObject.toString();
 			} catch (JSONException e1) {
 				e1.printStackTrace();
 			}
