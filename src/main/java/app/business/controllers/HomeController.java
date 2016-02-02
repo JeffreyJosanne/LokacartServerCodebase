@@ -79,7 +79,7 @@ public class HomeController {
 		
 		List<OrganizationMembership> membershipListpending = organizationMembershipService.getOrganizationMembershipListByStatus(organization, 0);
 		List<OrganizationMembership> membershipListapproved = organizationMembershipService.getOrganizationMembershipListByStatus(organization, 1);
-		dashmap.put("totalUsers", membershipListpending.size()+membershipListapproved.size());
+		dashmap.put("totalUsers", membershipListapproved.size());
 		dashmap.put("pendingUsers", membershipListpending.size());
 		int todayUsers=0;
 		for(OrganizationMembership membership : membershipListpending)
