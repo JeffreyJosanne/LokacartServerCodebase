@@ -9,6 +9,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import javax.transaction.Transactional;
 
@@ -16,7 +17,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import app.business.services.BillLayoutSettingsService;
 import app.business.services.GcmTokensService;
 import app.business.services.OrderService;
 import app.business.services.OrganizationMembershipService;
@@ -104,6 +106,9 @@ public class OrderRestController {
 	@Autowired
 	GcmTokensService gcmTokensService;
 	
+	@Autowired
+	BillLayoutSettingsService billLayoutSettingsService;
+	
 	
 		public HashMap<String, Integer> dashBoardLocal(String orgabbr) throws ParseException {
 
@@ -119,7 +124,7 @@ public class OrderRestController {
 		
 		List<OrganizationMembership> membershipListpending = organizationMembershipService.getOrganizationMembershipListByStatus(organization, 0);
 		List<OrganizationMembership> membershipListapproved = organizationMembershipService.getOrganizationMembershipListByStatus(organization, 1);
-		dashmap.put("totalUsers", membershipListpending.size()+membershipListapproved.size());
+		dashmap.put("totalUsers", membershipListapproved.size());
 		dashmap.put("pendingUsers", membershipListpending.size());
 		int todayUsers=0;
 		for(OrganizationMembership membership : membershipListpending)
@@ -255,7 +260,20 @@ public class OrderRestController {
 			SendMail.sendMail("vishalghodke@gmail.com", "Cottage Industry App: Order Placed", "Dear Admin,\nCustomer "+order.getMessage().getUser().getName()+" has placed an order of order id "+order.getOrderId()+".\n\nThankyou\nLokacart Team\n");
 		return response;
 	}
-
+	
+	
+	@RequestMapping(value = "{org}/viewbill/{orderId}",method = RequestMethod.GET)
+	public String viewBill(@PathVariable String org, @PathVariable int orderId){
+		
+		Order order = orderRepository.findOne(orderId);
+		Organization organization= order.getOrganization();
+		String organizationabbr = organization.getAbbreviation();
+		BillLayoutSettings billLayoutSetting = billLayoutSettingsRepository.findByOrganization(organization);
+		String msg = SendBill.returnBill(order, organization, billLayoutSetting);
+		System.out.println(msg);
+		return msg;
+	}
+	
 	
 
 	@Transactional
