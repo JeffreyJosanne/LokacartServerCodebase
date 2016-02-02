@@ -69,17 +69,17 @@ public class GcmRequest {
 //		} catch (Exception e) {
 //			e.printStackTrace();
 //		}
-
+		System.out.println((dashData.get("newUsersToday").toString()) +" "+ (dashData.get("pendingUsers").toString()) +" "+ (dashData.get("totalUsers").toString()));
 		message = new Message.Builder()
 				// .timeToLive(30)
 				.delayWhileIdle(false)
 				.addData("id", "2")
-				.addData("processed",Integer.toString(dashData.get("processed")))
-				.addData("cancelled", Integer.toString(dashData.get("cancelled")))
-				.addData("saved", Integer.toBinaryString(dashData.get("saved")))
-				.addData("newUsersToday", Integer.toBinaryString(dashData.get("newUsersToday")))
-				.addData("pendingUsers", Integer.toBinaryString(dashData.get("pendingUsers")))
-				.addData("totalUsers", Integer.toBinaryString(dashData.get("totalUsers")))
+				.addData("processed",(dashData.get("processed").toString()))
+				.addData("cancelled", (dashData.get("cancelled").toString()))
+				.addData("saved", (dashData.get("saved").toString()))
+				.addData("newUsersToday", (dashData.get("newUsersToday").toString()))
+				.addData("pendingUsers", (dashData.get("pendingUsers").toString()))
+				.addData("totalUsers", (dashData.get("totalUsers").toString()))
 				.collapseKey("2")
 				.build();
 		try {
