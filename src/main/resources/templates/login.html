@@ -81,9 +81,16 @@
                                 <!-- 
                                 <button class="btn"
                                 type="button">Help</button>-->
+                                <button class="btn btn-success" data-toggle="modal" data-title="Forgot Password" data-target="#forgot-password-modal">Forgot Password?</button> 
                             </div>
-                        </div>
-
+                            </div>
+                    
+                                   
+                     <!--     
+                        
+						<div>
+						<p align="right"><a href="#url">Forgot password?</a></p>
+						</div>   -->
                         <div th:if="${param.error}" class="alert alert-error">
                             <button class="close" data-dismiss="alert" type=
                             "button">×</button> <strong>Access Denied.</strong>
@@ -147,6 +154,36 @@
   </div>
   <!-- /.modal-dialog --> 
 </div>
+
+<div class = "modal fade" id="forgot-password-modal" tabindex = "-2"  aria-labelledby="HeadingDelete" aria-hidden="true">
+ <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+           <h4 class="modal-title custom_align" id="HeadingDelete">Forgot Password</h4>
+      </div>
+       <div class="modal-body">
+       	 <form class="form-horizontal"> 
+		  <div class="control-group">
+		    <label class="control-label" for="number-input">Phone number</label>
+			<div class="controls">
+			  <input type="text" class="input-large" id="number-input" placeholder="1023456789" />
+			</div>
+		  </div>
+		  <div class="control-group">
+		    <label class="control-label" for="username-input">Username</label>
+			<div class="controls">
+				 <input type="text" class="input-large" id="username-input" placeholder="sushmitasen@gmail.com" />
+			</div>
+		  </div>
+		  </form>
+      </div>
+     </div>
+     </div>
+     <div class="modal-footer ">
+    <button type="button" class="btn btn-success" id="forgot-password" ><i class="icon-white icon-ok"></i> Send Email</button>
+    <button type="button" class="btn btn-default" data-dismiss="modal"><i class="icon-white icon-remove"></i> Cancel</button> 
+  </div>
+     </div>
 <script th:src="@{/static/js/libs/jquery.js}"></script>
 <script th:src="@{/static/js/libs/bootstrap.min.js}"></script>
 
