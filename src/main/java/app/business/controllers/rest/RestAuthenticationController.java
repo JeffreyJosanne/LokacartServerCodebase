@@ -113,7 +113,7 @@ public class RestAuthenticationController {
 		
 		List<OrganizationMembership> membershipListpending = organizationMembershipService.getOrganizationMembershipListByStatus(organization, 0);
 		List<OrganizationMembership> membershipListapproved = organizationMembershipService.getOrganizationMembershipListByStatus(organization, 1);
-		dashmap.put("totalUsers", membershipListpending.size()+membershipListapproved.size());
+		dashmap.put("totalUsers", membershipListapproved.size());
 		dashmap.put("pendingUsers", membershipListpending.size());
 		int todayUsers=0;
 		for(OrganizationMembership membership : membershipListpending)
@@ -455,37 +455,7 @@ public class RestAuthenticationController {
 			response.put("Error", "Email doesn't exist Exists");
 			return response;
 		}
-		for (int i=0;i<orgListJsonArray.length();i++)
-		{
-			 try {
-				JSONObject org = orgListJsonArray.getJSONObject(i);
-				int org_id=org.getInt("org_id");
-				//Adding organization
-				Organization organization= organizationRepository.findOne(org_id);
-				if(organization==null)
-				{
-					response.put("Status", "Failure");
-					response.put("Error", "Organization with Id "+org_id+" does not exists");
-					return response;
-				}
-				String orgabbr = organization.getAbbreviation();
-				List <String> androidTargets = getTargetDevices(organization);
-				if(androidTargets.size()>0) {
-					GcmRequest gcmRequest = new GcmRequest();
-					gcmRequest.broadcast(user.getName()+" would like to be a member", "New Member Request", androidTargets,1,user.getUserId());
-					HashMap<String, Integer> dashData = null;
-					try {
-						dashData = dashBoardLocal(orgabbr);
-					} catch (ParseException e) {
-						e.printStackTrace();
-					}
-					gcmRequest.broadcast(androidTargets,orgabbr,dashData);		
-				}
-				
-			} catch (JSONException e) {
-				e.printStackTrace();
-			}
-		}
+		
 		
 		Organization organization=new Organization();
 //		user.setAddress(address);
@@ -518,9 +488,16 @@ public class RestAuthenticationController {
 				organizationMembership.setUser(user);
 				organizationMembership.setIsAdmin(false);
 				organizationMembership.setIsPublisher(false);
+				if (organization.getAutoApprove() == true)
+				{
+					organizationMembership.setStatus(1);
+				}
+				else {
 				organizationMembership.setStatus(0);
+				}
 				organizationMembership=organizationMemberRepository.save(organizationMembership);
 				organizationMemberships.add(organizationMembership);
+				
 			} catch (JSONException e) {
 				e.printStackTrace();
 			}
@@ -541,6 +518,40 @@ public class RestAuthenticationController {
 		for(Organization org: orgList)
 		{
 			groupMembershipService.addParentGroupMembership(org, user);
+		}
+		for (int i=0;i<orgListJsonArray.length();i++)
+		{
+			 try {
+				JSONObject org = orgListJsonArray.getJSONObject(i);
+				int org_id=org.getInt("org_id");
+				//Adding organization
+				Organization organizationNew= organizationRepository.findOne(org_id);
+				if(organizationNew==null)
+				{
+					response.put("Status", "Failure");
+					response.put("Error", "Organization with Id "+org_id+" does not exists");
+					return response;
+				}
+				String orgabbr = organizationNew.getAbbreviation();
+				List <String> androidTargets = getTargetDevices(organizationNew);
+				if(androidTargets.size()>0) {
+					GcmRequest gcmRequest = new GcmRequest();
+					if (organizationNew.getAutoApprove() == false)
+					{
+						gcmRequest.broadcast(user.getName()+" would like to be a member", "New Member Request", androidTargets,1,user.getUserId());
+					}
+					HashMap<String, Integer> dashData = null;
+					try {
+						dashData = dashBoardLocal(orgabbr);
+					} catch (ParseException e) {
+						e.printStackTrace();
+					}
+					gcmRequest.broadcast(androidTargets,orgabbr,dashData);		
+				}
+				
+			} catch (JSONException e) {
+				e.printStackTrace();
+			}
 		}
 		response.put("Status","Success");
 		return response;

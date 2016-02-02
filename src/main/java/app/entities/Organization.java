@@ -94,7 +94,13 @@ public class Organization implements Serializable {
 	@Column(name="ivr_number")
 	private String ivrNumber;
 
+	@Column(name="auto_approve")
+	@Type(type="org.hibernate.type.NumericBooleanType")
+	private boolean autoApprove;
+	
+	
 	private String name;
+	
 	/*
 	 * These columns will be added to Beta version
 	@Column(name="has_only_inbox")
@@ -357,6 +363,16 @@ public class Organization implements Serializable {
 
 	public void setInboundCallPlayLatestBroadcast(boolean inboundCallPlayLatestBroadcast) {
 		this.inboundCallPlayLatestBroadcast = inboundCallPlayLatestBroadcast;
+	}
+	
+	
+	public boolean getAutoApprove() {
+		return this.autoApprove;
+	}
+	
+	
+	public void setAutoApprove(boolean autoApprove) {
+		this.autoApprove = autoApprove;
 	}
 
 	public String getIncomingSmsCode() {
