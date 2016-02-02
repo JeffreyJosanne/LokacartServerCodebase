@@ -213,4 +213,134 @@ public class SendBill {
 		
 	}
 	
+	public static String returnBill(Order order, Organization organization, BillLayoutSettings billLayoutSetting) {
+		String rows= "";
+	     double total= 0;
+	     HashMap<String,OrderItem> map= new HashMap<String,OrderItem>();
+	     for(OrderItem orderitem: order.getOrderItems())
+   	 {
+   		 if(!map.containsKey(orderitem.getProduct().getName()))
+   			 map.put(orderitem.getProduct().getName(), orderitem);
+   		 else
+   		 {
+   			 OrderItem orderItem=new OrderItem();
+   			 float qty=map.get(orderitem.getProduct().getName()).getQuantity()+orderitem.getQuantity();
+   			 orderItem.setOrder(order);
+   			 orderItem.setProduct(orderitem.getProduct());
+   			 orderItem.setQuantity(qty);
+   			 orderItem.setUnitRate(orderitem.getUnitRate());
+   			 map.put(orderitem.getProduct().getName(),orderItem);
+   		 }
+   	 }
+	     Set<String> product= map.keySet();
+	     Iterator<String> i= product.iterator();
+	     while(i.hasNext())
+	     {
+	    	 OrderItem orderitem= map.get(i.next());
+	    	 rows = rows+"<tr>";
+	    	 rows = rows + "<td style=\"text-align:right\">"+orderitem.getProduct().getName()+"</td>";
+	    	 rows = rows + "<td style=\"text-align:right\">"+orderitem.getQuantity()+"</td>";
+	    	 rows = rows + "<td style=\"text-align:right\">"+orderitem.getUnitRate()+"</td>";
+	    	 rows = rows + "<td style=\"text-align:right\">"+(orderitem.getQuantity()*orderitem.getUnitRate())+"</td></tr>";
+	    	 total = total + orderitem.getQuantity()*orderitem.getUnitRate();
+	     }
+	     String msg = new String("<html>"+
+	 			"<head>"+
+				"<title>Bill</title>"+
+				"<meta charset=\"utf-8\" />"+
+				"<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge,chrome=1\" />"+
+				"<title>RuralIVRS - Welcome</title>"+
+				"<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />"+
+				"<meta name=\"description\" content=\"Rural IVRS Web application.\" />"+
+				"<meta name=\"author\" content=\"IIT Bombay\" />"+
+				"<style>"+
+					"table, th, td {"+
+		    			"border: 1px solid black;"+
+		    			"border-collapse: collapse;"+
+					"}"+
+				"</style>"+
+			"</head>"+
+			"<body style=\"font-family:Times New Roman; font-size:8\">"+
+				"<br>"+
+				"<div class=\"container-fluid\">"+
+					"<div class=\"row-fluid\" style=\"text-align:center\">"+
+						"<div class=\"span4\">"+
+						"<center>"+
+							"<table class=\"table\">"+
+								"<thead>"+
+									"<tr>"+
+										"<td colspan=\"2\" style=\"text-align:center\">"+
+											"<b>"+
+												"<div>"+organization.getName()+"</div>"+
+											"</b>"+
+											"<div>"+organization.getAddress()+"</div>"+
+											"<div>"+organization.getContact()+"</div>"+
+											"<div>"+billLayoutSetting.getHeaderContent()+"</div>"+
+										"</td>"+
+									"</tr>"+
+								"</thead>"+
+								"<tbody>"+
+									"<tr>"+
+										"<td>"+
+											"<div><b>Member: </b></div>"+
+											"<div>"+order.getMessage().getUser().getName()+"</div>"+
+										"</td>"+
+										"<td>"+
+											"<div><b>Group Name: </b></div>"+
+											"<div>"+order.getMessage().getGroup().getName()+"</div>"+			
+										"</td>"+
+									"</tr>"+
+									"<tr>"+
+										"<td>"+
+											"<div><b>Order Id: </b></div>"+
+											"<div>#"+order.getOrderId()+"</div>"+
+										"</td>"+
+										"<td>"+
+											"<div><b>Time: </b></div>"+
+											"<div>"+order.getMessage().getTime()+"</div>"+			
+										"</td>"+
+									"</tr>"+
+									"<tr>"+
+										"<td colspan=\"2\">"+
+											"<table>"+
+												"<thead>"+
+													"<th>Product</th>"+
+													"<th>Quantity</th>"+
+													"<th>Rate(Rs.)</th>"+
+													"<th>Cost(Rs.)</th>"+
+												"</thead>"+
+												"<tbody>"+
+													rows+
+												"</tbody>"+
+											"</table>"+			
+										"</td>"+
+									"</tr>"+
+									"<tr>"+
+										"<td colspan=\"2\">"+
+											"<table width=\"100%\">"+
+												"<tbody>"+
+													"<tr>"+
+														"<th>Total</th>"+
+														"<td style=\"text-align:right\">"+total+"</td>"+
+													"</tr>"+
+												"</tbody>"+
+											"</table>"+
+										"</td>"+
+									"</tr>"+
+									"<tr>"+
+										"<td colspan=\"2\">"+
+											"<div style=\"text-align:center\">"+billLayoutSetting.getFooterContent()+"</div>"+
+										"</td>"+
+									"</tr>"+
+								"</tbody>"+
+							"</table>"+
+						"</center>"+
+						"</div>"+
+					"</div>"+
+				"</div>"+
+			"</body>"+
+		"</html>");
+		return msg;
+	}
+	
 }
