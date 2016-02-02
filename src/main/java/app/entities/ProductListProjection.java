@@ -7,7 +7,7 @@ public interface ProductListProjection {
 
 	int getProductId();
 	String getName();
-	int getQuantity();
+	float getQuantity();
 	float getUnitRate();
 	public String getImageUrl();
 	int getStatus();
