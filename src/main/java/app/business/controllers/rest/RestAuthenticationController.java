@@ -174,6 +174,19 @@ public class RestAuthenticationController {
 		}
 		return androidTargets;
 	}
+	
+	@RequestMapping ( value = "/resetlink", method = RequestMethod.GET)
+	
+	public void sendResetLink(@RequestParam (value="username") String username, @RequestParam (value ="phonenumber") String phonenumber) {
+		
+	}
+	
+	
+	
+	
+	
+	
+	
 	@RequestMapping(value = "/versioncheck",method = RequestMethod.GET)
 	public String checkVersion (@RequestParam(value="version")String version) {
 		int id=1;
