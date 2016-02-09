@@ -94,16 +94,14 @@ public class SecurityConfig extends GlobalAuthenticationConfigurerAdapter {
 	
 		protected void configure(HttpSecurity http) throws Exception {
 			http
-			.antMatcher("/app/changepassword").authorizeRequests().anyRequest().authenticated().and().httpBasic()
-			.and()
-				.antMatcher("/api/**")
-					.authorizeRequests()
-						.anyRequest().authenticated()
-						.and()
-					.httpBasic()
-						.and()
-					.csrf()
-						.disable();
+			.antMatcher("/api/**")
+			.authorizeRequests()
+				.anyRequest().authenticated()
+				.and()
+			.httpBasic()
+				.and()
+			.csrf()
+				.disable();
 					//.sessionManagement()
 					//	.sessionCreationPolicy(SessionCreationPolicy.STATELESS);
 					//
@@ -127,7 +125,7 @@ public class SecurityConfig extends GlobalAuthenticationConfigurerAdapter {
 					           // I couldn't figure out how to do it only for the REST part. If someone figures
 					           // this out, please do it.  --Ankit
 				.authorizeRequests() 
-					.antMatchers("/static/**", "/CallHandler","/OutboundCallHandler","/BroadcastCallHandler","/IncomingSMSHandler","/app/**").permitAll()
+					.antMatchers("/static/**", "/CallHandler","/OutboundCallHandler","/BroadcastCallHandler","/IncomingSMSHandler","/app/**","/success","/expire","/invalid").permitAll()
 					.anyRequest().authenticated()
 					.and()
 				.formLogin()
