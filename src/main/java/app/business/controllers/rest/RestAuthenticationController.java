@@ -1,5 +1,8 @@
 package app.business.controllers.rest;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -10,16 +13,21 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
+import javax.servlet.http.HttpServletResponse;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import app.business.services.GcmTokensService;
@@ -946,6 +954,163 @@ public class RestAuthenticationController {
 	   for( int i = 0; i < len; i++ ) 
 	      sb.append( AB.charAt( rnd.nextInt(AB.length()) ) );
 	   return sb.toString();
+	}
+	
+	@RequestMapping(value = "/passwordrequest",method = RequestMethod.POST )
+	public @ResponseBody String requestPassword(@RequestBody String requestBody){
+		JSONObject responseJsonObject = new JSONObject();
+		System.out.println("Inside password request.");
+		
+		String email=null, number=null, password=null;
+		try{
+			System.out.println(requestBody);
+			JSONObject object = new JSONObject(requestBody);
+			email = object.getString("email");
+			number = object.getString("phonenumber");
+			password = object.getString("password");
+		}
+		catch(Exception e){
+			e.printStackTrace();
+			try {
+				responseJsonObject.put("response", "failure");
+			} catch (JSONException e1) {
+				e1.printStackTrace();
+			}
+			return responseJsonObject.toString();
+		}
+		User user = userService.getUserFromEmail(email);
+		UserPhoneNumber userPhoneNumber =  userPhoneNumberService.getUserPhoneNumber(number);
+		if (user.getUserId() == userPhoneNumber.getUser().getUserId()){
+			System.out.println("match");
+			String otp=randomString(4);
+			String hashTempPassword = passwordEncoder.encode(password);
+			java.util.Date date= new java.util.Date();
+			Timestamp currentTimestamp= new Timestamp(date.getTime());
+			user.setTime(currentTimestamp);
+			user.setPassTemp(hashTempPassword);
+			user.setPassOtp(otp);
+			user.setPassTime(currentTimestamp);
+			userService.addUser(user);
+			
+			int id = user.getUserId();
+			try{
+				System.out.println("http://ruralict.cse.iitb.ac.in/RuralIvrs/app/approvepassword/"+id+"/"+otp );
+			SendMail.sendMail(email, 
+					"Cottage Industry App: Password Reset Request" , 
+					"We have received a request to reset your password. This request is valid for 24 hours.\n To approve, click on the link below :\n\n\t\t  <a href = \"http://ruralict.cse.iitb.ac.in/RuralIvrs/app/approvepassword/"+id+"/"+
+					otp +"\"> Update my password </a> \n\n"+
+					"Link doesn't work? Copy the following link to your browser address bar: \n\n\t\t <a href = \"http://ruralict.cse.iitb.ac.in/RuralIvrs/app/approvepassword/"+id+"/"+
+					otp +"\"> http://ruralict.cse.iitb.ac.in/RuralIvrs/app/approvepassword/"+id+"/"+otp +"</a> \n\n\n "+
+					"You received this email, because it was requested by a user. This is part of the procedure to create a new password on the system. If you DID NOT request a new password then please ignore this email and your password will remain the same.\n \n" +
+					"Thank you, \nThe RuralIVRS Team"
+					);
+			responseJsonObject.put("repsonse", "An email has been sent to the mentioned email ID. Please follow the instructions in the email to complete your request");
+			return responseJsonObject.toString(); 
+			}
+			catch(Exception e) {
+				e.printStackTrace();
+				System.out.println("Cannot send email");
+				try {
+					responseJsonObject.put("response", "Cannot process request");
+				} catch (JSONException e1) {
+					e1.printStackTrace();
+				}
+				return responseJsonObject.toString();
+				
+			}	
+		}
+		else {
+			try {
+				System.out.println("No match... ");
+				responseJsonObject.put("response", "Cannot find account with entered credentials. Please enter the correct phonenumber and email ID");
+			} catch (JSONException e) {
+				e.printStackTrace();
+			}
+			return responseJsonObject.toString();
+
+		}
+	}
+	
+	
+	@RequestMapping(value = "/approvepassword/{userId}/{otp}",method = RequestMethod.GET )
+	public void approveChange(@PathVariable int userId, @PathVariable String otp, HttpServletResponse response){
+		User user = null;
+		try{
+		user = userService.getUser(userId);
+		}
+		catch(Exception e){
+			e.printStackTrace();
+		}
+		String storedOtp = null;
+		long otpTime = 0;
+		try{
+		storedOtp = user.getPassOtp();
+		Timestamp otpStamp = user.getPassTime();
+//		response.setContentType("text/html");
+//		ClassPathResource res = new ClassPathResource("templates/success.html");
+//		try{
+//		BufferedReader br = new BufferedReader(new InputStreamReader(
+//				res.getInputStream()));
+//		String cur, page = "";
+//		while ((cur = br.readLine()) != null) {
+//			page += cur;
+//		}
+//		response.getWriter().print(page);
+//		br.close();
+//		}
+//		catch(IOException e) {
+//			e.printStackTrace();
+//		}
+		
+		otpTime = otpStamp.getTime();
+		}
+		catch(Exception e) {
+			try {
+				response.sendRedirect("/invalid");
+				return;
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
+		}
+		if (otp.equals(storedOtp)){
+			java.util.Date date= new java.util.Date();
+			Timestamp currentTimestamp= new Timestamp(date.getTime());
+			long currentTime = currentTimestamp.getTime();
+			if ((currentTime - otpTime) >= 86400000) {
+				System.out.println("Link expired");
+				try {
+					response.sendRedirect("/expire");
+					return;
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+			else {
+
+				user.setSha256Password(user.getPassTemp());
+				user.setPassOtp(null);
+				user.setPassTime(null);
+				user.setPassTemp(null);
+				userService.addUser(user);
+				System.out.println("Password updated");
+				//File file = new File("/src/main/resources/templates/success.html");
+				try {
+					response.sendRedirect("/success");
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+			
+		}
+		else {
+			System.out.println("Invalid link");
+			try {
+				response.sendRedirect("/invalid");
+				return;
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 	
 }
