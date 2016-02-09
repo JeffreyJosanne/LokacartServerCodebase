@@ -11,6 +11,9 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Vector;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -64,9 +67,123 @@ public class ManageUsersRestController {
 	@Autowired
 	UserPhoneNumberService userPhoneNumberService;
 
+	
+	
+
+	@RequestMapping(value = "/userList", method = RequestMethod.GET, produces = "application/json")
+	@PreAuthorize("hasRole('ADMIN'+#org)")
+	public String getUserListJson(@PathVariable String org) {
+		//List<UserManage> userrows = new ArrayList<UserManage>();
+		JSONObject jsonResponseObject = new JSONObject();
+		JSONArray jsonArray = new JSONArray();
+		Organization organization = organizationService.getOrganizationByAbbreviation(org);
+
+		List<OrganizationMembership> membershipList = organizationMembershipService.getOrganizationMembershipListByStatus(organization, 1);
+
+		for(OrganizationMembership membership : membershipList)
+		{
+
+			User user = membership.getUser();
+
+			try
+			{
+				// Get required attributes for each user
+				int manageUserID = user.getUserId();
+				String name = user.getName();
+				String email = user.getEmail();
+				String phone = userPhoneNumberService.getUserPrimaryPhoneNumber(user).getPhoneNumber();
+				String role  = userService.getUserRole(user, organization);
+				String address = user.getAddress();
+				Timestamp time= user.getTime();
+				JSONObject object = new JSONObject();
+				try {
+				object.put("userID", manageUserID);
+				object.put("name", name);
+				object.put("email", email);
+				object.put("phone", phone);
+				object.put("role", role);
+				object.put("address", address);
+				object.put("time", time);
+				}
+				catch(Exception e) {
+					e.printStackTrace();
+				}
+				// Create the UserManage Object and add it to the list
+			//	UserManage userrow = new UserManage(manageUserID, name, email, phone, role, address, time);
+				jsonArray.put(object);
+			}
+			catch(NullPointerException e)
+			{
+				System.out.println("User name not having his phone number is: " + user.getName() + " having userID: " + user.getUserId());
+			}
+		}
+		try {
+			jsonResponseObject.put("users", jsonArray);
+		} catch (JSONException e) {
+			e.printStackTrace();
+		}
+		return jsonResponseObject.toString();		
+	}
+	
+	
+	@RequestMapping(value="/userApprovalList", method=RequestMethod.GET, produces = "application/json")
+	@PreAuthorize("hasRole('ADMIN'+#org)")
+	public String getUserApprovalListJson(@PathVariable String org) {
+		JSONObject jsonResponseObject = new JSONObject();
+		JSONArray jsonArray = new JSONArray();
+		Organization organization = organizationService.getOrganizationByAbbreviation(org);
+		List<OrganizationMembership> membershipList = organizationMembershipService.getOrganizationMembershipListByStatus(organization, 0);
+		for(OrganizationMembership membership : membershipList)
+		{
+
+			User user = membership.getUser();
+			
+			try
+			{
+				// Get required attributes for each user
+				int manageUserID = user.getUserId();
+				String name = user.getName();
+				String email = user.getEmail();
+				String phone = userPhoneNumberService.getUserPrimaryPhoneNumber(user).getPhoneNumber();
+				String role  = userService.getUserRole(user, organization);
+				String address = user.getAddress();
+				Timestamp time = user.getTime();
+				// Create the UserManage Object and add it to the list
+				JSONObject object = new JSONObject();
+				try {
+					object.put("userID", manageUserID);
+					object.put("name", name);
+					object.put("email", email);
+					object.put("phone", phone);
+					object.put("role", role);
+					object.put("address", address);
+					object.put("time", time);
+					}
+					catch(Exception e) {
+						e.printStackTrace();
+					}
+				jsonArray.put(object);
+			}
+			catch(NullPointerException e)
+			{
+				System.out.println("User name not having his phone number is: " + user.getName() + " having userID: " + user.getUserId());
+			}
+		}
+		try {
+			jsonResponseObject.put("users",jsonArray);
+		} catch (JSONException e) {
+			e.printStackTrace();
+		}
+		return jsonResponseObject.toString();
+	}
+	
+	
+	
+	
+	
 	// Method to the get all the User list in the 'Manage Users' tab
 	@RequestMapping(value="/getUserList", method=RequestMethod.GET, produces = "application/json")
-	@PreAuthorize("hasRole('ADMIN'+#org)")
+
 	public List<UserManage> getUserList(@PathVariable String org) {
 
 		List<UserManage> userrows = new ArrayList<UserManage>();
@@ -103,7 +220,7 @@ public class ManageUsersRestController {
 		return userrows;
 	}
 	@RequestMapping(value="/getUserApprovalList", method=RequestMethod.GET, produces = "application/json")
-	@PreAuthorize("hasRole('ADMIN'+#org)")
+
 	public List<UserManage> getUserApprovalList(@PathVariable String org) {
 		List<UserManage> userrows = new ArrayList<UserManage>();
 		Organization organization = organizationService.getOrganizationByAbbreviation(org);
@@ -134,6 +251,278 @@ public class ManageUsersRestController {
 		}
 		return userrows;
 	}
+	
+	
+	@RequestMapping(value="/editUser", method = RequestMethod.POST)
+	@PreAuthorize("hasRole('ADMIN'+#org)")
+	@Transactional
+	public String editUser(@PathVariable String org, @RequestBody String requestBody) {
+
+		
+		JSONObject object = null;
+		JSONObject responseJsonObject = new JSONObject();
+		// Get the input parameters from AngularJS
+		String name = null, email = null, address = null;
+		int userId=0;
+		try{
+		object = new JSONObject(requestBody);
+		userId = Integer.parseInt(object.getString("userid"));
+		name = object.getString("name");
+		email = object.getString("email");
+		address = object.getString("address");
+		object = new JSONObject(requestBody);
+		}
+		catch(Exception e) {
+			e.printStackTrace();
+		}
+		// Add the new User to database
+		User user = null;
+		try{
+		user = userService.getUser(userId);
+		}
+		catch(Exception e) {
+			e.printStackTrace();
+			try {
+				responseJsonObject.put("response", "User not found");
+			} catch (JSONException e1) {
+				e1.printStackTrace();
+			}
+			return responseJsonObject.toString();
+		}
+		// Update the attributes of the user
+		user.setName(name);
+		user.setEmail(email);
+		user.setAddress(address);
+		userService.addUser(user);
+		try {
+			responseJsonObject.put("response","success");
+		} catch (JSONException e) {
+			e.printStackTrace();
+		}
+		return responseJsonObject.toString();
+	}
+	
+	@RequestMapping(value="/addUser", method = RequestMethod.POST, produces = "application/json")
+	@PreAuthorize("hasRole('ADMIN'+#org)")
+	@Transactional
+	public String addUser(@PathVariable String org, @RequestBody String requestBody) {
+
+		Organization organization = organizationService.getOrganizationByAbbreviation(org);
+		JSONObject object = null;
+		JSONObject responseJsonObject = new JSONObject();
+		// Get the input parameters from AngularJS
+		String name = null, email = null, phone = null, role = null, address = null, fname = null;
+		try{
+			
+		object = new JSONObject(requestBody);
+		name = object.getString("name");
+		email = object.getString("email");
+		phone = object.getString("phone");
+		//role  = object.getString("role");
+		address = object.getString("address");
+		fname=name;
+		if(name.contains(" "))
+		{
+			int i=name.indexOf(" ");
+			fname=name.substring(0, i);
+		}
+		
+		}
+		catch (Exception e){
+			e.printStackTrace();
+			try {
+				responseJsonObject.put("response","Failed");
+			} catch (JSONException e1) {
+				e1.printStackTrace();
+			}
+			return responseJsonObject.toString();
+		}
+		Random randomint = new Random();
+		String password= fname+randomint.nextInt(1000);
+
+		// Variables to store the boolean values of the roles
+		boolean isAdmin = false;
+		boolean isPublisher = false;
+
+		// Find if the number is already present in the database
+		// If present report it to the frontend
+		if(!userPhoneNumberService.findPreExistingPhoneNumber(phone))
+		{
+			try {
+				responseJsonObject.put("response", "Failed");
+			} catch (JSONException e) {
+				e.printStackTrace();
+			}
+			return responseJsonObject.toString();
+		}
+
+		// Add the new User to database
+		User user = new User(name, address, "en", "en", email);
+		java.util.Date date= new java.util.Date();
+		Timestamp currentTimestamp= new Timestamp(date.getTime());
+		user.setTime(currentTimestamp);
+		user.setTextbroadcastlimit(0);
+		user.setVoicebroadcastlimit(0);
+		user.setSha256Password(passwordEncoder.encode(password));
+		userService.addUser(user);
+		System.out.println("user timestamp is: "+user.getTime());
+
+		UserPhoneNumber primaryPhoneNumber = new UserPhoneNumber(user, phone, true);
+		userPhoneNumberService.addUserPhoneNumber(primaryPhoneNumber);
+
+		// Add the Organization Membership for the user in the Database
+		OrganizationMembership membership = new OrganizationMembership(organization, user, isAdmin, isPublisher, 1);
+		organizationMembershipService.addOrganizationMembership(membership);
+
+		// By Default Add the new user to parent group
+		groupMembershipService.addParentGroupMembership(organization, user);
+
+		// Create the UserManage Object
+		int manageUserID = user.getUserId();
+
+		//UserManage userrow = new UserManage(manageUserID, name, email, phone, role, address, currentTimestamp);
+		System.out.println("password is: "+password);
+		SendMail.sendMail(email, "Cottage Industry App: User credentials", "Dear User,\nThe admin of "+organization.getName()+" has added you as a trusted member in the organization.\nNow you can place your order by logging in to our lokacart app using the credentials given below-\nUsername : "+email+"\nPassword : "+password+"\n\nIf you wish to change your password, you can simply click on forget your password button on the app login screen and follow the instructions.\n\nThankyou,\nBest Regards,\nLokacart Team");
+	
+		// Finally return it as a JSON response body
+		try {
+			responseJsonObject.put("response","success");
+		} catch (JSONException e) {
+			e.printStackTrace();
+		}
+		return responseJsonObject.toString();
+	}
+	
+	@RequestMapping(value="/addRole", method = RequestMethod.POST)
+	@PreAuthorize("hasRole('ADMIN'+#org)")
+	@Transactional
+	public String addRole(@PathVariable String org, @RequestBody String requestBody) {
+
+		Organization organization = organizationService.getOrganizationByAbbreviation(org);
+		JSONObject object = null;
+		JSONObject responseJsonObject = new JSONObject();
+		OrganizationMembership membership = null;
+		int userId=0;
+		User user =null;
+		String addRole = null;
+		try {
+		object = new JSONObject(requestBody);
+		userId = Integer.parseInt(object.getString("userid"));
+		addRole = object.getString("addRole");
+		user = userService.getUser(userId);
+		membership = organizationMembershipService.getUserOrganizationMembership(user, organization);
+		}
+		
+		catch(Exception e){
+			e.printStackTrace();
+			try{
+			responseJsonObject.put("response","Member not found");
+			}
+			catch(Exception e1)
+			{
+				e1.printStackTrace();
+			}
+			return responseJsonObject.toString();
+		}
+		if(addRole.equals("Admin"))
+		{
+			membership.setIsAdmin(true);
+			user.setTextbroadcastlimit(-1);
+			user.setVoicebroadcastlimit(-1);
+			userService.addUser(user);
+		}
+		else if(addRole.equals("Publisher"))
+		{
+			membership.setIsPublisher(true);
+			user.setTextbroadcastlimit(-1);
+			user.setVoicebroadcastlimit(-1);
+			userService.addUser(user);
+		}
+		else if(addRole.equals("Member"))
+		{
+			membership.setIsAdmin(false);
+			membership.setIsPublisher(false);
+		}
+
+		// Finally make changes in the database
+		try{
+		organizationMembershipService.addOrganizationMembership(membership);
+		}
+		catch(Exception e){
+			e.printStackTrace();
+			try {
+				responseJsonObject.put("response", "failed");
+			} catch (JSONException e1) {
+				e1.printStackTrace();
+			}
+			return responseJsonObject.toString();
+		}
+		try {
+			responseJsonObject.put("response", "Success");
+		} catch (JSONException e) {
+			e.printStackTrace();
+		}
+		return responseJsonObject.toString();
+		}
+	
+	
+	@RequestMapping(value="/removeRole", method = RequestMethod.POST)
+	@PreAuthorize("hasRole('ADMIN'+#org)")
+	@Transactional
+	public String removeUserRole(@PathVariable String org, @RequestBody String requestBody) {
+
+		Organization organization = organizationService.getOrganizationByAbbreviation(org);
+		//int manageUserId = Integer.parseInt(userDetails.get("userid"));
+		//String removeRole = userDetails.get("removeRole");
+		JSONObject object = null;
+		JSONObject responseJsonObject = new JSONObject();
+		User user = null;
+		int userId=0;
+		String removeRole = null;
+		OrganizationMembership membership=null;
+		try{
+		object = new JSONObject(requestBody);
+		userId = Integer.parseInt(object.getString("userid"));
+		removeRole = object.getString("removeRole");
+		user = userService.getUser(userId);
+		membership = organizationMembershipService.getUserOrganizationMembership(user, organization);
+		}
+		catch(Exception e) {
+			e.printStackTrace();
+			try {
+				responseJsonObject.put("response", "failure");
+			} catch (JSONException e1) {
+				e1.printStackTrace();
+			}
+			
+		}
+		
+		if(removeRole.equals("Admin"))
+		{
+			membership.setIsAdmin(false);
+			user.setTextbroadcastlimit(0);
+			user.setVoicebroadcastlimit(0);
+			userService.addUser(user);
+		}
+		else if(removeRole.equals("Publisher"))
+		{
+			membership.setIsPublisher(false);
+			user.setTextbroadcastlimit(0);
+			user.setVoicebroadcastlimit(0);
+			userService.addUser(user);
+		}
+
+		// Finally make changes in the database
+		organizationMembershipService.addOrganizationMembership(membership);
+		try {
+			responseJsonObject.put("response", "Success");
+		} catch (JSONException e) {
+			e.printStackTrace();
+		}
+		return responseJsonObject.toString();
+	}
+	
+
 	
 	@RequestMapping(value="/countUserList", method=RequestMethod.GET, produces = "application/json")
 	@PreAuthorize("hasRole('ADMIN'+#org)")
