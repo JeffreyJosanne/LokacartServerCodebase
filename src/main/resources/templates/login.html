@@ -7,6 +7,64 @@
 <link th:href="@{/static/css/bootstrap-responsive.css}" rel="stylesheet">
 <link th:href="@{/static/css/site.css}" rel="stylesheet"> 
 <link th:href="@{/static/css/ruralivrs.css}" rel="stylesheet"> 
+<script th:src="@{/static/js/libs/jquery.js}"></script>
+<script th:src="@{/static/js/libs/jquery-ui.min.js}"></script>
+<script>
+
+function reset() {
+	console.log("inside");
+	var username = document.getElementById('username-input').value;
+	var phonenumber = document.getElementById('number-input').value;
+	var newpassword = document.getElementById('newpassword-input').value;
+	var confirmpassword = document.getElementById('confirmpassword-input').value;
+	if (username == null || username == "" || phonenumber == null || phonenumber == "" || newpassword == null || newpassword == "" || confirmpassword == null || confirmpassword == "") {
+		alert("All fields must be entered");
+	}
+	console.log(username + " " + phonenumber);
+	if (newpassword == confirmpassword) {
+		var obj = {};
+		console.log("inside");
+		obj['email']=username;
+		obj['phonenumber']=phonenumber;
+		obj['password']=newpassword;
+		console.log(obj);
+		var tempObj = JSON.stringify(obj);
+		/*
+		xhttp.onreadystatechange = function() {
+			  if (xhttp.readyState == 4 && xhttp.status == 200) {
+				  alert(xhttp.responseText);
+			  }
+			};
+		xhttp.open("POST", "http://ruralict.cse.iitb.ac.in/RuralIvrs/app/passwordrequest", true);
+		xhttp.setRequestHeader("Content-type", "application/json");
+		xhttp.send(obj); */
+	/*	 $.post("http://localhost:8080/app/passwordrequest", tempObj, function(result){
+		        var res = JSON && JSON.parse(result) || $.parseJSON(result);
+		        alert(res['response']);
+		    });*/
+		    
+		$.ajax({
+		    url: 'http://localhost:8080/app/passwordrequest',
+		    type: 'POST',
+		    data: JSON.stringify(obj),
+		    contentType: 'application/json; charset=utf-8',
+		    dataType: 'json',
+		    async: false,
+		    success: function(msg) {
+		        alert(msg);
+		    }
+		});
+		
+		
+	}
+	else {
+		alert("The passwords do not match");
+	}
+
+	
+	
+}
+</script>
 <title>Login | RuralIVRS</title>
 </head>
 <body>
@@ -175,6 +233,24 @@
 				 <input type="text" class="input-large" id="username-input" placeholder="sushmitasen@gmail.com" />
 			</div>
 		  </div>
+		  <div class="control-group">
+                            <label class="control-label" for=
+                            "newpassword-input">New Password</label>
+
+                            <div class="controls">
+                                <input id="newpassword-input" name="newpassword" placeholder=
+                                "Min. 8 Characters" type="password" required>
+                            </div>
+           </div>
+           <div class="control-group">
+                            <label class="control-label" for=
+                            "confirmpassword-input">Confirm Password</label>
+
+                            <div class="controls">
+                                <input id="confirmpassword-input" name="confirmpassword" placeholder=
+                                "Min. 8 Characters" type="password" required>
+                            </div>
+           </div>
 		  </form>
       </div>
      </div>
@@ -186,7 +262,8 @@
      </div>
 <script th:src="@{/static/js/libs/jquery.js}"></script>
 <script th:src="@{/static/js/libs/bootstrap.min.js}"></script>
-<script th:src="@{/static/js/login.js}"></script>
+<!-- <script th:src="@{/static/js/login.js}"></script>   -->
+
 
 </body>
 </html>
