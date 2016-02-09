@@ -56,6 +56,15 @@ public class User implements Serializable {
 	
 	@Column(name="textbroadcastlimit")
 	private Integer textbroadcastlimit;
+	
+	@Column(name = "pass_otp")
+	private String passOtp;
+	
+	@Column( name = "pass_time")
+	private Timestamp passTime;
+	
+	@Column ( name = "pass_temp" )
+	private String passTemp;
 
 	public Integer getVoicebroadcastlimit() {
 		return voicebroadcastlimit;
@@ -172,6 +181,31 @@ public class User implements Serializable {
 	public void setWebLocale(String webLocale) {
 		this.webLocale = webLocale;
 	}
+	
+	public String getPassOtp() {
+		return this.passOtp;
+	}
+	
+	public void setPassOtp(String passOtp) {
+		this.passOtp = passOtp;
+	}
+	
+	public Timestamp getPassTime() {
+		return this.passTime;
+	}
+	
+	public void setPassTime(Timestamp passTime) {
+		this.passTime = passTime;
+	}
+	
+	public String getPassTemp () {
+		return this.passTemp;
+	}
+	
+	public void setPassTemp( String passTemp) {
+		this.passTemp = passTemp;
+	}
+	
 
 	public List<Broadcast> getBroadcasts() {
 		return this.broadcasts;
