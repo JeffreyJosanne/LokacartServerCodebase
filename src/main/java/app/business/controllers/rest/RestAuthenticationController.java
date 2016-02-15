@@ -354,7 +354,7 @@ public class RestAuthenticationController {
 		String password=null;
 		String name=null;
 		String email=null;
-		String pincode = null;
+		String pincode = null, lastname =null;
 		JSONArray orgListJsonArray = null;
 		User user = new User();
 		UserPhoneNumber userPhoneNumber= new UserPhoneNumber();
@@ -369,9 +369,10 @@ public class RestAuthenticationController {
 			email=jsonObject.getString("email");
 			try{
 				pincode = jsonObject.getString("pincode");
+				lastname = jsonObject.getString("lastname");
 			}
 			catch(Exception e) {
-				System.out.println("No pincode");
+				System.out.println("No pincode or lastname");
 			}
 			//orgListJsonArray=jsonObject.getJSONArray("orglist");
 		} catch (JSONException e) {
@@ -420,6 +421,8 @@ public class RestAuthenticationController {
 		user.setName(name);
 		if (pincode != null)
 			user.setPincode(pincode);
+		if(lastname != null)
+			user.setLastname(lastname);
 //		java.util.Date date= new java.util.Date();
 //		Timestamp currentTimestamp= new Timestamp(date.getTime());
 //		user.setTime(currentTimestamp);

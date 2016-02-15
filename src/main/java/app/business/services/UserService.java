@@ -139,6 +139,10 @@ public class UserService {
 	
 	public User getUserFromEmail(String email) {
 		List <User> users = userRepository.findByEmail(email);
+		if(users.isEmpty()) {
+		
+			return null;
+		}
 		return users.get(0);
 	}
 }

@@ -39,6 +39,9 @@ public class User implements Serializable {
 	
 	@Column (name = "pincode")
 	private String pincode;
+	
+	@Column (name = "lastname")
+	private String lastname;
 
 	@Column(name="call_locale")
 	private String callLocale;
@@ -121,7 +124,6 @@ public class User implements Serializable {
 		this.callLocale = callLocale;
 		this.email = email;
 	}
-	
 	public User(String name, String address, String webLocale, String callLocale, String email, String pincode) {
 		this.name = name;
 		this.address = address;
@@ -129,6 +131,16 @@ public class User implements Serializable {
 		this.callLocale = callLocale;
 		this.email = email;
 		this.pincode = pincode;
+	}
+	
+	public User(String name, String address, String webLocale, String callLocale, String email, String pincode, String lastname) {
+		this.name = name;
+		this.address = address;
+		this.webLocale = webLocale;
+		this.callLocale = callLocale;
+		this.email = email;
+		this.pincode = pincode;
+		this.lastname = lastname;
 	}
 
 	public int getUserId() {
@@ -153,6 +165,14 @@ public class User implements Serializable {
 	
 	public void setPincode(String pincode) {
 		this.pincode = pincode;
+	}
+	
+	public String getLastname() {
+		return this.lastname;
+	}
+	
+	public void setLastname(String lastname) {
+		this.lastname = lastname;
 	}
 
 	public String getCallLocale() {

@@ -365,7 +365,7 @@ public class ManageUsersRestController {
 		// Get the input parameters from AngularJS
 		int isPubInt =0, isAdminInt=0;
 		boolean isPublisher=false, isAdmin= false;
-		String name = null, email = null, phone = null, role = null, address = null, fname = null,pincode = null;
+		String name = null, email = null, phone = null, role = null, address = null, fname = null,pincode = null, lastname=null;
 		try{
 			
 		object = new JSONObject(requestBody);
@@ -375,6 +375,12 @@ public class ManageUsersRestController {
 		//role  = object.getString("role");
 		address = object.getString("address");
 		pincode = object.getString("pincode");
+		try {
+			lastname = object.getString("lastname");
+		}
+		catch(Exception e) {
+			System.out.println("no lastname");
+		}
 		
 		isPubInt = Integer.parseInt(object.getString("isPublisher"));
 		if (isPubInt == 1) {
@@ -431,8 +437,14 @@ public class ManageUsersRestController {
 			}
 			return responseJsonObject.toString();
 		}
- 		User user = new User(name, address, "en", "en", email, pincode);
-		java.util.Date date= new java.util.Date();
+		User user = null;
+		if (lastname != null) {
+			user = new User(name, address, "en", "en", email, pincode,lastname);
+		}
+		else {
+ 		user = new User(name, address, "en", "en", email, pincode);
+		}
+ 		java.util.Date date= new java.util.Date();
 		Timestamp currentTimestamp= new Timestamp(date.getTime());
 		user.setTime(currentTimestamp);
 		user.setTextbroadcastlimit(0);
