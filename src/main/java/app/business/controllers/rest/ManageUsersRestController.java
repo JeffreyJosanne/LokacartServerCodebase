@@ -6,6 +6,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -262,23 +263,69 @@ public class ManageUsersRestController {
 		JSONObject object = null;
 		JSONObject responseJsonObject = new JSONObject();
 		// Get the input parameters from AngularJS
-		String name = null, email = null, address = null;
-		int userId=0;
+		String name = null, email = null, address = null, role =null, pincode = null, phonenumber =null;
+		boolean isAdmin = false, isPublisher = false;
+		int userId=0, isPubInt =0, isAdminInt =0;
 		try{
 		object = new JSONObject(requestBody);
 		userId = Integer.parseInt(object.getString("userid"));
 		name = object.getString("name");
 		email = object.getString("email");
 		address = object.getString("address");
-		object = new JSONObject(requestBody);
+		pincode  = object.getString("pincode");
+		phonenumber = object.getString("phone");
+		//role = object.getString("role");
+		isPubInt = Integer.parseInt(object.getString("isPublisher"));
+		if (isPubInt == 1) {
+			isPublisher = true;
+		}
+	
+		isAdminInt = Integer.parseInt(object.getString("isAdmin"));
+		if (isAdminInt == 1) {
+			isAdmin = true;
+		}
+		
+		
 		}
 		catch(Exception e) {
 			e.printStackTrace();
 		}
+		
 		// Add the new User to database
 		User user = null;
+		OrganizationMembership membership = null;
+		Organization organization = organizationService.getOrganizationByAbbreviation(org);
+		UserPhoneNumber userPhoneNumber = null;
 		try{
 		user = userService.getUser(userId);
+		if (user == null)
+		{
+			responseJsonObject.put("response", "User not found");
+			return responseJsonObject.toString();
+		}
+		UserPhoneNumber tempUserPhoneNumber = userPhoneNumberService.getUserPhoneNumber(phonenumber);
+		if (tempUserPhoneNumber != null) {
+			if (tempUserPhoneNumber.getUser() != user){
+				responseJsonObject.put("response", "Phone number exists");
+				return responseJsonObject.toString();
+			}
+		}
+		User tempUser = userService.getUserFromEmail(email);
+		if (user != tempUser) {
+			responseJsonObject.put("response", "Email ID exists");
+			return responseJsonObject.toString();
+		}
+		
+	/*	Iterator <UserPhoneNumber>iterator = list.iterator();
+		while(iterator.hasNext()){
+			if(iterator.next().getPhoneNumber().equals(phonenumber)) {
+				
+				
+				
+			}
+		}*/
+		membership = organizationMembershipService.getUserOrganizationMembership(user, organization);
+		userPhoneNumber = userPhoneNumberService.getUserPrimaryPhoneNumber(user);
 		}
 		catch(Exception e) {
 			e.printStackTrace();
@@ -289,10 +336,15 @@ public class ManageUsersRestController {
 			}
 			return responseJsonObject.toString();
 		}
+		
 		// Update the attributes of the user
 		user.setName(name);
 		user.setEmail(email);
 		user.setAddress(address);
+		user.setPincode(pincode);
+		membership.setIsAdmin(isAdmin);
+		membership.setIsPublisher(isPublisher);
+		organizationMembershipService.addOrganizationMembership(membership);
 		userService.addUser(user);
 		try {
 			responseJsonObject.put("response","success");
@@ -311,7 +363,9 @@ public class ManageUsersRestController {
 		JSONObject object = null;
 		JSONObject responseJsonObject = new JSONObject();
 		// Get the input parameters from AngularJS
-		String name = null, email = null, phone = null, role = null, address = null, fname = null;
+		int isPubInt =0, isAdminInt=0;
+		boolean isPublisher=false, isAdmin= false;
+		String name = null, email = null, phone = null, role = null, address = null, fname = null,pincode = null;
 		try{
 			
 		object = new JSONObject(requestBody);
@@ -320,6 +374,17 @@ public class ManageUsersRestController {
 		phone = object.getString("phone");
 		//role  = object.getString("role");
 		address = object.getString("address");
+		pincode = object.getString("pincode");
+		
+		isPubInt = Integer.parseInt(object.getString("isPublisher"));
+		if (isPubInt == 1) {
+			isPublisher = true;
+		}
+	
+		isAdminInt = Integer.parseInt(object.getString("isAdmin"));
+		if (isAdminInt == 1) {
+			isAdmin = true;
+		}
 		fname=name;
 		if(name.contains(" "))
 		{
@@ -341,15 +406,15 @@ public class ManageUsersRestController {
 		String password= fname+randomint.nextInt(1000);
 
 		// Variables to store the boolean values of the roles
-		boolean isAdmin = false;
-		boolean isPublisher = false;
+/*		boolean isAdmin = false;
+		boolean isPublisher = false;*/
 
 		// Find if the number is already present in the database
 		// If present report it to the frontend
 		if(!userPhoneNumberService.findPreExistingPhoneNumber(phone))
 		{
 			try {
-				responseJsonObject.put("response", "Failed");
+				responseJsonObject.put("response", "Phone Number already exists");
 			} catch (JSONException e) {
 				e.printStackTrace();
 			}
@@ -357,23 +422,59 @@ public class ManageUsersRestController {
 		}
 
 		// Add the new User to database
-		User user = new User(name, address, "en", "en", email);
+		User tempUser = userService.getUserFromEmail(email);
+		if (tempUser != null) {
+			try {
+				responseJsonObject.put("response", "Email already exists");
+			} catch (JSONException e) {
+				e.printStackTrace();
+			}
+			return responseJsonObject.toString();
+		}
+ 		User user = new User(name, address, "en", "en", email, pincode);
 		java.util.Date date= new java.util.Date();
 		Timestamp currentTimestamp= new Timestamp(date.getTime());
 		user.setTime(currentTimestamp);
 		user.setTextbroadcastlimit(0);
 		user.setVoicebroadcastlimit(0);
 		user.setSha256Password(passwordEncoder.encode(password));
+		if(isAdmin)
+		{
+			user.setTextbroadcastlimit(-1);
+			user.setVoicebroadcastlimit(-1);
+		}
+		else if(isPublisher)
+		{
+			user.setTextbroadcastlimit(-1);
+			user.setVoicebroadcastlimit(-1);
+			
+		}
+		else
+		{
+			isAdmin=false;
+			isPublisher=false;;
+		}
+		try
+		{
 		userService.addUser(user);
+		}
+		catch(Exception e) {
+			try {
+				responseJsonObject.put("response", "Email ID already exists");
+			} catch (JSONException e1) {
+				e.printStackTrace();
+			}
+			return responseJsonObject.toString();
+		}
 		System.out.println("user timestamp is: "+user.getTime());
 
 		UserPhoneNumber primaryPhoneNumber = new UserPhoneNumber(user, phone, true);
 		userPhoneNumberService.addUserPhoneNumber(primaryPhoneNumber);
 
 		// Add the Organization Membership for the user in the Database
+		
 		OrganizationMembership membership = new OrganizationMembership(organization, user, isAdmin, isPublisher, 1);
 		organizationMembershipService.addOrganizationMembership(membership);
-
 		// By Default Add the new user to parent group
 		groupMembershipService.addParentGroupMembership(organization, user);
 
@@ -387,6 +488,7 @@ public class ManageUsersRestController {
 		// Finally return it as a JSON response body
 		try {
 			responseJsonObject.put("response","success");
+			responseJsonObject.put("userId",user.getUserId());
 		} catch (JSONException e) {
 			e.printStackTrace();
 		}

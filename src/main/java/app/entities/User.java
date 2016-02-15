@@ -13,10 +13,12 @@ import javax.persistence.Id;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
-import app.entities.broadcast.Broadcast;
-import app.entities.message.Message;
+import org.hibernate.annotations.Columns;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import app.entities.broadcast.Broadcast;
+import app.entities.message.Message;
 
 
 /**
@@ -34,6 +36,9 @@ public class User implements Serializable {
 	private int userId;
 
 	private String address;
+	
+	@Column (name = "pincode")
+	private String pincode;
 
 	@Column(name="call_locale")
 	private String callLocale;
@@ -116,6 +121,15 @@ public class User implements Serializable {
 		this.callLocale = callLocale;
 		this.email = email;
 	}
+	
+	public User(String name, String address, String webLocale, String callLocale, String email, String pincode) {
+		this.name = name;
+		this.address = address;
+		this.webLocale = webLocale;
+		this.callLocale = callLocale;
+		this.email = email;
+		this.pincode = pincode;
+	}
 
 	public int getUserId() {
 		return this.userId;
@@ -131,6 +145,14 @@ public class User implements Serializable {
 
 	public void setAddress(String address) {
 		this.address = address;
+	}
+	
+	public String getPincode() {
+		return this.pincode;
+	}
+	
+	public void setPincode(String pincode) {
+		this.pincode = pincode;
 	}
 
 	public String getCallLocale() {
