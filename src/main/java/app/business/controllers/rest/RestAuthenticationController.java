@@ -1,8 +1,6 @@
 package app.business.controllers.rest;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -10,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Random;
 
@@ -19,7 +18,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,6 +27,10 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.plivo.helper.api.client.RestAPI;
+import com.plivo.helper.api.response.message.MessageResponse;
+import com.plivo.helper.exception.PlivoException;
 
 import app.business.services.GcmTokensService;
 import app.business.services.GroupMembershipService;
@@ -273,7 +275,8 @@ public class RestAuthenticationController {
 				e.printStackTrace();
 			}	
 		}
-				
+		
+		/*		
 		if(userPhoneNumber==null)
 		{
 			String otp=randomString(4);
@@ -291,6 +294,36 @@ public class RestAuthenticationController {
 				e.printStackTrace();
 			}
 			return responseJsonObject.toString();
+		}*/
+		if (phonenumber != null) {
+			String authId = "MAYMRJYJZHYZFKYJHMMZ";
+			String authToken = "YjRlZDM5ZTYzNzA1Yjk4MDgwOTBkNDNmOGQyYmM4";
+			RestAPI api = new RestAPI(authId, authToken, "v1");
+			String otp=randomString(4);
+			LinkedHashMap<String, String> parameters = new LinkedHashMap<String, String>();
+			parameters.put("src", "919916731832");
+			parameters.put("dst",phonenumber);
+			parameters.put("text", "Hello from Lokacart! \nYour OTP is: " + otp );
+			parameters.put("method", "GET");
+			 try {
+		            MessageResponse msgResponse = api.sendMessage(parameters);
+		            System.out.println(msgResponse);
+		            System.out.println("Api ID : " + msgResponse.apiId);
+		            System.out.println("Message : " + msgResponse.message);
+		            responseJsonObject.put("otp", otp);
+					responseJsonObject.put("organizations",orgArray);
+					responseJsonObject.put("text", "Otp has been sent to your phone");
+					
+		            if (msgResponse.serverCode == 202) {
+		                System.out.println("Message UUID : " + msgResponse.messageUuids.get(0).toString());
+		            } else {
+		                System.out.println(msgResponse.error);
+		            }
+		        } catch (PlivoException e) {
+		            System.out.println(e.getLocalizedMessage());
+		        }
+			return responseJsonObject.toString();
+			
 		}
 		else
 		{
@@ -321,6 +354,7 @@ public class RestAuthenticationController {
 		String password=null;
 		String name=null;
 		String email=null;
+		String pincode = null;
 		JSONArray orgListJsonArray = null;
 		User user = new User();
 		UserPhoneNumber userPhoneNumber= new UserPhoneNumber();
@@ -333,6 +367,12 @@ public class RestAuthenticationController {
 			password=jsonObject.getString("password");
 			name=jsonObject.getString("name");
 			email=jsonObject.getString("email");
+			try{
+				pincode = jsonObject.getString("pincode");
+			}
+			catch(Exception e) {
+				System.out.println("No pincode");
+			}
 			//orgListJsonArray=jsonObject.getJSONArray("orglist");
 		} catch (JSONException e) {
 			e.printStackTrace();
@@ -378,6 +418,8 @@ public class RestAuthenticationController {
 		user.setEmail(email);
 		user.setSha256Password(passwordEncoder.encode(password));
 		user.setName(name);
+		if (pincode != null)
+			user.setPincode(pincode);
 //		java.util.Date date= new java.util.Date();
 //		Timestamp currentTimestamp= new Timestamp(date.getTime());
 //		user.setTime(currentTimestamp);
