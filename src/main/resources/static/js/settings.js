@@ -84,6 +84,7 @@ website.controller("SettingsCtrl", function($scope, $http, $routeParams, $window
 		// 'select' elements from dashboard options
 		$scope.feedbackSelect = $scope.selectOptions[Number(organization.enableFeedbacks)].value;
 		$scope.autoApproveSelect = $scope.selectOptions[Number(organization.autoApprove)].value;
+		$scope.stockManagementSelect = $scope.selectOptions[Number(organization.stockManagement)].value;
 		$scope.responseSelect = $scope.selectOptions[Number(organization.enableResponses)].value;
 		$scope.billSelect = $scope.selectOptions[Number(organization.enableBilling)].value;
 		$scope.textSelect = $scope.selectOptions[Number(organization.enableSms)].value;
@@ -153,6 +154,7 @@ website.controller("SettingsCtrl", function($scope, $http, $routeParams, $window
 			//change the required attributes
 			$scope.organization.enableFeedbacks = Boolean(Number($scope.feedbackSelect));
 			$scope.organization.autoApprove = Boolean(Number($scope.autoApproveSelect));
+			$scope.organization.stockManagement = Boolean(Number($scope.stockManagementSelect));
 			$scope.organization.enableResponses = Boolean(Number($scope.responseSelect));
 			$scope.organization.enableBilling = Boolean(Number($scope.billSelect));
 			$scope.organization.enableOrderCancellation = Boolean(Number($scope.rejectSelect));

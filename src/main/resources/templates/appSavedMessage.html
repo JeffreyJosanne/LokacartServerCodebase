@@ -75,7 +75,7 @@
 				    			<div>Product</div>
 				    			<div>
 				    				<select class="span10" id="savedAppProductName">
-				    					<option th:each="product : ${products}" th:value="${product.productId} + ' ' + ${product.unitRate}" th:text="${product.name}">Product</option>
+				    					<option th:each="product : ${products}" th:value="${product.productId} + ' ' + ${product.unitRate} + ' ' + ${product.quantity} + ' ' + ${product.productType.organization.stockManagement}" th:text="${product.name}">Product</option>
 				    				</select>
 				    			</div>
 				    		</div>
@@ -115,11 +115,15 @@
 						<div class="span3">{{orderItem.product}}</div>
 						<div class="span3">{{orderItem.quantity}}</div>
 						<div class="span2">{{orderItem.unitRate}}</div>
+					<!-- <div class ="span2" style = "display:none">{{orderItem.product.productId}}</div> -->
 						<div class="span1">
 							<button value="{{orderItem.$$hashKey}}" class="close remove-saved-app-order-item"><i class="icon-remove" aria-hidden="true"></i></button>
 						</div>
 						<input id="savedAppHidden{{orderItem.$$hashKey}}" type="hidden" value="saved">
 						<input id="savedAppHiddenOrderItemId{{orderItem.$$hashKey}}" type="hidden" value="{{orderItem.id}}">
+					 	<input id="savedAppHiddenProductName{{orderItem.$$hashKey}}" type ="hidden" value="{{orderItem.product}}"> 
+						<input  th:each="product : ${products}" th:id ="${product.name}" th:value="${product.productId}" type="hidden">
+<!-- 						<input id="stockManagementEnabled" th:value = "${ orderItem.product.productType.organization.stockManagement  }"> -->
 					</div>
 		  		</div>
 		  		<div id="savedAppOrderItems">

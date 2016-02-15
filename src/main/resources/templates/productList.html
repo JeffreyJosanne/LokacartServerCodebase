@@ -27,10 +27,12 @@
       	<tr>
       	<th>Product Image</th>
         <th>Product Name</th>
-        <th>Price(Per Kg)</th>
+        <th>Price</th>
+        <th>Quantity</th>
         <th>Edit Product</th>
         <th>Delete Product</th>
         <th>Product Status</th>
+        <th>Add Quantity</th>
         </tr>
       </thead>
       <tbody>
@@ -39,6 +41,7 @@
 		<td><img  src="{{product.imageUrl}}" width=25 height=25 onmouseover="this.width='100';this.height='100'" onmouseout="this.width='25';this.height='25'" /></td> 
 		<td>{{ product.name }}</td>
         <td>{{ product.unitRate }}</td>
+        <td>{{  product.quantity }}</td>
         <td>
             <p data-placement="top" data-toggle="tooltip" title="Edit">
               <button  id="btn-edit" ng-click="editCurrentProduct(product)" class="open-edit-modal btn btn-primary btn-xs" data-title="Edit"  data-toggle="modal" data-target="#edit-product-modal">
@@ -53,9 +56,15 @@
        </td>
        <td>
             <p data-placement="top" data-toggle="tooltip" title="Enable/Disable">
-              <button  id="btn-delete" ng-click="enableDisableCurrentProduct(product)" ng-class="{'btn btn-danger btn-xs': product.status, 'btn btn-success': !product.status}" data-title="displayStatus()" data-toggle="modal">{{ displayStatus() }}</button>
+              <button  id="btn-delete"  ng-click="enableDisableCurrentProduct(product)"  ng-class="{'btn btn-danger btn-xs': product.status, 'btn btn-success': !product.status}" data-title="displayStatus()" data-toggle="modal">{{ displayStatus() }}</button>
             </p>
        </td>
+       <td>
+            <p data-placement="top" data-toggle="tooltip" title="Add Quantity">
+              <button  id="btn-edit" ng-click="editCurrentProductQuantity(product)" class="open-edit-modal btn btn-primary btn-xs" data-title="Add Quantity"  data-toggle="modal" data-target="#quantity-product-modal">
+              <i class="icon-white icon-pencil"></i> Add More</button>
+            </p>
+        </td>
         </tr>
       </tbody>
     </table>
@@ -82,6 +91,12 @@
 		    <label class="control-label" id="update-product-input"></label>
 			<div class="controls">
 			  <input type="text" class="input-small" id="update-price-input" />
+		    </div>
+		  </div>
+		   <div class="control-group">	   
+		    <label class="control-label" id="update-quantity-input"></label>
+			<div class="controls">
+			  <input type="text" class="input-small" id="update-product-quantity-input" />
 		    </div>
 		  </div>
 	  </form>
@@ -187,6 +202,44 @@
     
 <!-- /.modal-content --> 
 <!-- /.modal-dialog -->
+
+<div class="modal fade" id="quantity-product-modal" tabindex="-2" role="dialog" aria-labelledby="HeadingAdd" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <button type="button" class="close" data-dismiss="modal" aria-hidden="true"><i class="icon-remove"></i> </button>
+      <h4 class="modal-title custom_align" id="HeadingEditQty">Add More</h4>
+    </div>
+    <div class="modal-body">
+    <form class="form-horizontal">
+    <div class="control-group">
+		    <label class="control-label" for="add-quantity-input">Add Quantity</label>
+			<div class="controls">
+			  <input type="text" class="input-large" id="add-quantity-input" placeholder="2"/>
+			</div>
+		  </div>
+		 </form>
+    </div>
+    </div>
+    <div class="modal-footer ">
+    <button type="button" class="btn btn-success" ng-click="updateQuantity()" id="add-quantity-product-button" ><i class="icon-white icon-ok"></i> Update</button>
+    <button type="button" class="btn btn-default" data-dismiss="modal"><i class="icon-white icon-remove"></i> Cancel</button>
+    </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 <div class="modal fade" id="product-add-failed-modal" tabindex="-2" role="dialog" aria-labelledby="HeadingAddFailed" aria-hidden="true">
   <div class="modal-dialog">

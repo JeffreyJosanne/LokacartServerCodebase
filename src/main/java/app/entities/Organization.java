@@ -98,6 +98,11 @@ public class Organization implements Serializable {
 	@Type(type="org.hibernate.type.NumericBooleanType")
 	private boolean autoApprove;
 	
+	@Column(name="stock_management")
+	@Type(type="org.hibernate.type.NumericBooleanType")
+	private boolean stockManagement;
+	
+	
 	
 	private String name;
 	
@@ -375,6 +380,14 @@ public class Organization implements Serializable {
 		this.autoApprove = autoApprove;
 	}
 
+	public boolean getStockManagement() {
+		return this.stockManagement;
+	}
+	
+	public void setStockManagement (boolean stockManagement) {
+		this.stockManagement = stockManagement;
+	}
+	
 	public String getIncomingSmsCode() {
 		return this.incomingSmsCode;
 	}

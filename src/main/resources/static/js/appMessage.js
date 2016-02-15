@@ -1,28 +1,42 @@
 /* Controller for handling voice Messages */
-website.controller("AppMessageCtrl", function($window, $resource, $scope, $route, $http, GetOrderItemsByOrder, RemoveOrderItem, AddOrderItem, UpdateOrder, UpdateMessage, UpdateTextMessageComment) {
+website.controller("AppMessageCtrl", function($window, $resource, $scope, $route, $http, GetOrderItemsByOrder, RemoveOrderItem, AddOrderItem, ProductEdit, UpdateOrder, UpdateMessage, UpdateTextMessageComment) {
 	
 	/* This array is a temporary queue to store new orderItems */
 	$scope.orderItemList = [];
-	
+	$scope.itemsCopy =[];
+	var items=[];
+	/*Temporary queue to store quantities */
+	$scope.productQty =[];
 	/* Clears orderItem queue */
 	$scope.clearQueue = function(){
-		
+		$scope.productQty=[];
 		$scope.orderItemList = [];
 	}
 	
 	/* Adds orderItems from queue to database */
 	$scope.addOrderItems = function() {
-		
+		console.log("saving... ");
 		for(i=0;i<$scope.orderItemList.length;i++){
 			var orderItem = $scope.orderItemList[i];
-			
 			$scope.orderItem = new AddOrderItem();
 			$scope.orderItem.product = orderItem.product;
 			$scope.orderItem.quantity = orderItem.quantity;
 			$scope.orderItem.order = orderItem.order;
 			$scope.orderItem.unitRate = orderItem.unitRate;
+			$scope.productid = orderItem.productid;
+		//	console.log(" cur qty: "+orderItem.curQty);
+		//	console.log("prod id: "+orderItem.productid);
 			
 			AddOrderItem.save($scope.orderItem, function() {});
+			
+			$scope.editproduct = ProductEdit.get({id:$scope.productid},function(){
+				$scope.editproduct.quantity= orderItem.curQty - orderItem.quantity;
+				$scope.editproduct.$update({id:$scope.productid},function(){
+					orderItem.product.quantity = $scope.editproduct.quantity;
+				});
+			});
+			console.log("done.");
+			
 		}
 		$scope.clearQueue();
 	};
@@ -35,10 +49,11 @@ website.controller("AppMessageCtrl", function($window, $resource, $scope, $route
 			$scope.orderItems = [];
 			 
 			/* Since product name is in different relation, separate request has to be sent to collect product names */
+			items=[];
 			var productList = [];
-			 
-			var items = orderItems["_embedded"]["orderItems"];
-			 
+			var productQty =[];
+			items = orderItems["_embedded"]["orderItems"];
+			 $scope.itemsCopy = items;
 			for(var i=0;i<items.length;i++){
 				 
 				/* Build new resource locally */
@@ -55,7 +70,7 @@ website.controller("AppMessageCtrl", function($window, $resource, $scope, $route
 				Product.get({}, function(product){
 					$scope.countOfCalls++;
 					productList.push(product.name);
-					 
+					 productQty.push(product.quantity);
 					/* Only if all requests are responded */
 					/* This approach makes the process little slow but could not find better way */
 					// TODO Better Approach
@@ -72,8 +87,9 @@ website.controller("AppMessageCtrl", function($window, $resource, $scope, $route
 							
 							items[j].quantity = parseFloat(items[j].quantity);
 							items[j].product = productList[j];
-							 
 							$scope.orderItems.push(items[j]);
+						//	console.log("Product quantity: "+productQty[j]);
+
 						}	 
 					 }
 				});
@@ -83,7 +99,45 @@ website.controller("AppMessageCtrl", function($window, $resource, $scope, $route
 	};
 
 	/* Remove already stored order Item from the database */ 
-	$scope.removeOrderItem = function(orderItemId){
+	$scope.removeOrderItem = function(orderItemId, productId,stockManagement){
+		 console.log("Items length: "+items.length);
+		 console.log("INSIDE");
+		var Product;
+		if(stockManagement == "true") {
+		for(var i=0;i<items.length;i++){
+			console.log("ID: "+items[i].id);
+			if(items[i].id.startsWith(orderItemId)){
+				console.log("found match");
+				Product = $resource(items[i]["_links"]["product"]["href"], {}, {
+					update: {
+						method: 'GET'
+					}
+			});
+				
+				Product.get({}, function(product){
+					//$scope.ProductID = product.productid;
+					console.log("product id: "+productId);
+					console.log("product name: "+product.name);
+					product.quantity = parseFloat(product.quantity);
+
+					$scope.prodId = productId;
+					$scope.editproduct = ProductEdit.get({id:$scope.prodId},function(){
+/*						console.log("product quantity: "+product.quantity);
+						console.log("item quantiy: "+items[i].quantity);*/
+						$scope.editproduct.quantity = product.quantity + items[i].quantity;
+						//console.log("new quantity: "+product.quantity);
+						$scope.editproduct.$update({id:$scope.prodId},function(){
+							product.quantity = $scope.editproduct.quantity;
+							console.log("Done updating after delete...");
+
+						});
+					});
+				});
+				break;
+			}
+	
+		}
+		}
 		
 		$scope.product = RemoveOrderItem.get({id: orderItemId},function(){
 			
@@ -256,12 +310,20 @@ $("#page-content").on("click", "#add-saved-app-order-items", function () {
 	var count = parseInt($("#add-saved-app-order-items").val());
 	count++;
 	$("#add-saved-app-order-items").val(count);
-	
+	var productDetails={};
 	/* Get values to generate orderItem objects from modal */
 	var productId = $.trim($("#savedAppProductName").val()).split(" ")[0];
 	var productUnitRate = $.trim($("#savedAppProductName").val()).split(" ")[1];
-	var productName = $("#savedAppProductName")[0].options[$("#savedAppProductName")[0].selectedIndex].innerHTML
+	var productName = $("#savedAppProductName")[0].options[$("#savedAppProductName")[0].selectedIndex].innerHTML;
+
+	
+	
 	var productQuantity = $.trim($("#savedAppProductQuantity").val());
+	var stockManagement = $.trim($("#savedAppProductName").val()).split(" ")[3];
+	var product = 'products/'+ productId;
+	console.log("product: "+product);
+	console.log("stock Management: "+ stockManagement);
+	var currentQuantity = parseFloat($.trim($("#savedAppProductName").val()).split(" ")[2]);
 	if(productQuantity == "other"){
 		productQuantity = $.trim($("#savedAppCustomQuantity").val());
 	}
@@ -269,6 +331,13 @@ $("#page-content").on("click", "#add-saved-app-order-items", function () {
 		createAlert("Quantity","Enter valid quantity.")
 		return;
 	}
+	productQuantity = parseFloat(productQuantity);
+	console.log("Prod Qty: "+productQuantity);
+	console.log("current Qty: "+currentQuantity);
+	if ( (productQuantity > currentQuantity) && (stockManagement == "true")) {
+		createAlert("Quantity","Insufficient stock.")
+		return;
+		}
 	var orderId = $.trim($("#savedAppOrderId").val());
 	
 	/* Create and add new row element for user */
@@ -288,11 +357,13 @@ $("#page-content").on("click", "#add-saved-app-order-items", function () {
 	/* Create order item element and push it in the queue */
 	var data={};
 	data.id = count;
+	data.productid = productId;
 	data.product = 'products/'+ productId;
-	data.quantity = parseInt(productQuantity);
+	//data.quantity = parseFloat(productQuantity);
+	data.quantity = productQuantity;
 	data.order = 'orders/' + orderId;
 	data.unitRate = productUnitRate;
-	
+	data.curQty = currentQuantity;
 	angular.element($("#add-saved-app-order-items")).scope().addOrderItemToQueue(data);
 });
 
@@ -300,12 +371,17 @@ $("#page-content").on("click", ".remove-saved-app-order-item", function () {
 	/* Get required values from modal */
 	var hashKey = $.trim($(this).val());
 	var status = document.getElementById("savedAppHidden"+hashKey).getAttribute("value");
-	
+	var productName = document.getElementById("savedAppHiddenProductName"+hashKey).getAttribute("value");
+	console.log(productName);
+	var productId = document.getElementById(productName).getAttribute("value");
+	console.log("product_id : "+productId);
+	var stockManagement = $.trim($("#savedAppProductName").val()).split(" ")[3];
+	console.log("org enabled: "+stockManagement);
 	/* This means that order item is already stored in database. So remove it from db. */
 	if(status == "saved"){
 		var id = document.getElementById("savedAppHiddenOrderItemId"+hashKey).getAttribute("value");
 		$("#savedAppAddedRow"+id).remove();
-		angular.element($("#add-saved-app-order-items")).scope().removeOrderItem(id);
+		angular.element($("#add-saved-app-order-items")).scope().removeOrderItem(id, productId, stockManagement);
 	}
 	else{
 		/* Manipulating HTML to respond that order Item is removed */

@@ -163,6 +163,7 @@ website.controller("ProductsCtrl",function($window, $scope, $http, $route, $loca
 		    angular.element($('#add-new-product-multi')).scope().reload();	
 
 		});
+		
 		$scope.displayStatus = function(product) {
 			if (this.product.status == 1){
 				return "Disable";
@@ -180,6 +181,29 @@ website.controller("ProductsCtrl",function($window, $scope, $http, $route, $loca
 			}
 		}
 		
+		$scope.editCurrentProductQuantity = function(product) {
+			console.log("inside");
+			$scope.id = this.product.productId;
+			$scope.qty = parseFloat(this.product.quantity);
+			$scope.updateQuantity = function() {
+				console.log("processing");
+				var incr =parseFloat($.trim($('#add-quantity-input').val()));
+				var newQty = incr + $scope.qty;
+				console.log("new quantity: "+newQty);
+				$scope.editproduct = ProductEdit.get({id:$scope.id},function(){
+					$scope.editproduct.quantity=newQty;
+					$scope.editproduct.$update({id:$scope.id},function(){
+						product.quantity = $scope.editproduct.quantity;
+					});
+				});
+				$("#quantity-product-modal").modal('toggle');
+				$('#add-quantity-input').val("");
+			}
+			
+		}
+		
+		
+		
 		//function to edit product
 		$scope.editCurrentProduct = function(product){
 			
@@ -188,6 +212,7 @@ website.controller("ProductsCtrl",function($window, $scope, $http, $route, $loca
 			$(".modal-header #HeadingEdit").html("Edit Product");
 			$(".modal-body #update-product-input").html("Price");
 			$(".modal-body #update-product-list-input-name").html("Name");
+			$(".modal-body #update-quantity-input").html("Modify Quantity");
 			if (stat == 1) {
 				$(".modal-footer #toggle-product").html("Disable");
 			}
@@ -196,16 +221,17 @@ website.controller("ProductsCtrl",function($window, $scope, $http, $route, $loca
 			}
 			$("#update-product-name-input").val(this.product.name);
 			$("#update-price-input").val(this.product.unitRate);
-			
+			$("#update-product-quantity-input").val(this.product.quantity);
 			$scope.updateEditCurrentProduct = function() {
 			
 				newprice = $.trim($('#update-price-input').val());
 				newname  = $.trim($('#update-product-name-input').val());
+				newQty = $.trim($('#update-product-quantity-input').val());
 				
-				if(! $.isNumeric(newprice) ){
-					createAlert("Invalid Input","Enter valid Price input as numerical value.");
+				if(! $.isNumeric(newprice) && ! $.isNumeric(newQty)){
+					createAlert("Invalid Input","Enter valid Price input and Quantity input as numerical value.");
 				}
-				else if(newprice < 0)
+				else if(newprice < 0 && newQty < 0 )
 				{
 					createAlert("Negative Input not allowed.");
 				}
@@ -215,9 +241,11 @@ website.controller("ProductsCtrl",function($window, $scope, $http, $route, $loca
 					$scope.editproduct = ProductEdit.get({id:$scope.id},function(){
 						$scope.editproduct.unitRate = newprice;
 						$scope.editproduct.name = newname;
+						$scope.editproduct.newQty = newQty;
 						$scope.editproduct.$update({id:$scope.id},function(){
 							product.unitRate = $scope.editproduct.unitRate;
 							product.name = $scope.editproduct.name;
+							product.quantity = $scope.editproduct.newQty;
 						});
 					});
 					

@@ -9,7 +9,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 
 import javax.transaction.Transactional;
 
@@ -17,7 +16,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -195,15 +193,50 @@ public class OrderRestController {
 		JSONObject jsonObject = null;
 		String organizationabbr = null;
 		String groupname=null;
+		Organization organization= null;
+		ArrayList <String> errorProduct = new ArrayList<String> ();
 		try {
+			JSONArray orderProducts = null;
 			jsonObject = new JSONObject(requestBody);
 			organizationabbr=jsonObject.getString("orgabbr");
 			groupname=jsonObject.getString("groupname");
+			organization= organizationRepository.findByAbbreviation(organizationabbr);
+			if(organization.getStockManagement() == true) {
+			//Quantity verification
+			orderProducts = jsonObject.getJSONArray("orderItems");
+			for (int i = 0; i < orderProducts.length(); i++) {
+				  
+				JSONObject row = orderProducts.getJSONObject(i);
+			    String productname=row.getString("name");
+			    float productQuantity =(float)row.getDouble("quantity");
+			    Product product=productService.getProductByNameAndOrg(productname,organization);
+			    float currentQuantity = product.getQuantity();
+			    if (currentQuantity < productQuantity) {
+			    	errorProduct.add(product.getName());
+			    }
+			}
+			if(!errorProduct.isEmpty()){
+				throw new Exception();
+			}
+			}
 		} catch (JSONException e) {
 			e.printStackTrace();
 		}
+		catch(Exception e1) {
+			System.out.println("Insufficent stock");
+			response.put("status", "Failure");
+			String error = new String();
+			JSONArray errorArray = new JSONArray();
+			Iterator <String> iterator = errorProduct.iterator();
+			while(iterator.hasNext()) {
+			//	error = error + iterator.next() +", ";
+				errorArray.put(iterator.next());
+			}
+			response.put("error", errorArray.toString());
+			return response;
+		}
 		Order order = new Order();
-		Organization organization= organizationRepository.findByAbbreviation(organizationabbr);
+		//Organization organization= organizationRepository.findByAbbreviation(organizationabbr);
 		order.setOrganization(organization);
 		order.setStatus("saved");
 		order=orderRepository.save(order);
@@ -211,13 +244,19 @@ public class OrderRestController {
 		try {
 			JSONArray orderItemsJSON = jsonObject.getJSONArray("orderItems");
 			for (int i = 0; i < orderItemsJSON.length(); i++) {
-			    OrderItem orderItem= new OrderItem();
+			  
 				JSONObject row = orderItemsJSON.getJSONObject(i);
 			    String productname=row.getString("name");
 			    float productQuantity =(float)row.getDouble("quantity");
 			    Product product=productService.getProductByNameAndOrg(productname,organization);
+			    float currentQuantity = product.getQuantity();
+			    OrderItem orderItem= new OrderItem();
 			    orderItem.setProduct(product);
 			    orderItem.setQuantity(productQuantity);	
+			    if (organization.getStockManagement() == true) {
+			    	product.setQuantity(currentQuantity - productQuantity);
+			    	productService.addProduct(product);
+			    }
 			    orderItem.setUnitRate(product.getUnitRate());
 			    orderItem.setOrder(order);
 			    orderItem=orderItemRepository.save(orderItem);
@@ -228,6 +267,7 @@ public class OrderRestController {
 		} catch (JSONException e) {
 			e.printStackTrace();
 		}
+	
 		order.setOrderItems(orderItems);
 		BinaryMessage bmessage= new BinaryMessage();
 		bmessage.setTime(new Timestamp((new Date()).getTime()));
@@ -723,6 +763,18 @@ public class OrderRestController {
 		order.setStatus("cancelled");
 		Organization organization = order.getOrganization();
 		String organizationabbr = organization.getAbbreviation();
+		List <OrderItem> items = order.getOrderItems();
+		Iterator <OrderItem> iterator = items.iterator();
+		if(organization.getStockManagement()) {
+		while(iterator.hasNext()) {
+			OrderItem orderItem = iterator.next();
+			Product product = orderItem.getProduct();
+			float quantity = orderItem.getQuantity();
+			float prodQty = product.getQuantity();
+			product.setQuantity(quantity + prodQty);
+			productService.addProduct(product);
+		}
+		}
 		try {
 		orderService.cancelOrder(order);
 		}
@@ -763,6 +815,18 @@ public class OrderRestController {
 		order.setStatus("rejected");
 		Organization organization = order.getOrganization();
 		String organizationabbr = organization.getAbbreviation();
+		List <OrderItem> items = order.getOrderItems();
+		Iterator <OrderItem> iterator = items.iterator();
+		if(organization.getStockManagement()) {
+		while(iterator.hasNext()) {
+			OrderItem orderItem = iterator.next();
+			Product product = orderItem.getProduct();
+			float quantity = orderItem.getQuantity();
+			float prodQty = product.getQuantity();
+			product.setQuantity(quantity + prodQty);
+			productService.addProduct(product);
+		}
+		}
 		try {
 		orderService.rejectOrder(order);
 		}
