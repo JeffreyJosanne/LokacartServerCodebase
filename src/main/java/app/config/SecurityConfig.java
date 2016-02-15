@@ -125,7 +125,7 @@ public class SecurityConfig extends GlobalAuthenticationConfigurerAdapter {
 					           // I couldn't figure out how to do it only for the REST part. If someone figures
 					           // this out, please do it.  --Ankit
 				.authorizeRequests() 
-					.antMatchers("/static/**", "/CallHandler","/OutboundCallHandler","/BroadcastCallHandler","/IncomingSMSHandler","/app/**","/success","/expire","/invalid").permitAll()
+					.antMatchers("/static/**", "/CallHandler","/OutboundCallHandler","/BroadcastCallHandler","/IncomingSMSHandler","/app/**","/app/rejectmember","/success","/expire","/invalid").permitAll()
 					.anyRequest().authenticated()
 					.and()
 				.formLogin()
