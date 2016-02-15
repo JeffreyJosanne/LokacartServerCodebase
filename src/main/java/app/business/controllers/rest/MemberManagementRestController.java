@@ -19,9 +19,11 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import app.business.services.GcmTokensService;
+import app.business.services.GroupMembershipService;
 import app.business.services.OrganizationMembershipService;
 import app.business.services.OrganizationService;
 import app.business.services.UserPhoneNumberService;
@@ -29,6 +31,7 @@ import app.business.services.UserService;
 import app.business.services.message.MessageService;
 import app.entities.GcmTokens;
 import app.entities.Group;
+import app.entities.GroupMembership;
 import app.entities.Organization;
 import app.entities.OrganizationMembership;
 import app.entities.User;
@@ -56,6 +59,9 @@ public class MemberManagementRestController {
 	
 	@Autowired
 	MessageService messageService;
+	
+	@Autowired
+	GroupMembershipService groupMembershipService;
 	
 	public HashMap<String, Integer> dashBoardLocal(String orgabbr) throws ParseException {
 
@@ -227,5 +233,66 @@ public class MemberManagementRestController {
 			gcmRequest.broadcast(androidTargets,organizationabbr,dashData);					}
 		return responseJsonObject.toString();	
 	}
+	
+	
+	@Transactional
+	@RequestMapping(value = "/reject",method = RequestMethod.POST )
+	public @ResponseBody String rejectMember(@RequestBody String requestBody) {
+		JSONObject responseJsonObject = new JSONObject();
+		String organizationabbr = null;
+		Organization organization = null;
+		int userId = 0;
+		try{
+			JSONObject object = new JSONObject(requestBody);
+			organizationabbr = object.getString("orgabbr");
+			userId = object.getInt("userId");
+		}
+		catch(JSONException e) {
+			e.printStackTrace();
+		}
+		try{
+		organization = organizationService.getOrganizationByAbbreviation(organizationabbr);
+		User user = userService.getUser(userId);
+	
+		for(GroupMembership groupMembership: user.getGroupMemberships()) {
+	
+			if(groupMembership.getGroup().getOrganization().getName().equals(organization.getName())) {
+			
+				groupMembershipService.removeGroupMembership(groupMembership);
+			
+			}
+		}
+		
+		OrganizationMembership organizationMembership= organizationMembershipService.getUserOrganizationMembership(user, organization);
+		organizationMembershipService.removeOrganizationMembership(organizationMembership);
+		try {
+			responseJsonObject.put("response", "Member Removed");
+		} catch (JSONException e) {
+			e.printStackTrace();
+		}
+		}
+		catch(Exception e){
+			try {
+				e.printStackTrace();
+				responseJsonObject.put("response", "Failed");
+			} catch (JSONException e1) {
+				e1.printStackTrace();
+			}
+		}
+		List<String > androidTargets = getTargetDevices(organization);
+		if(androidTargets.size() > 0) {
+			GcmRequest gcmRequest = new GcmRequest();
+			HashMap<String, Integer> dashData = null;
+			try {
+				dashData = dashBoardLocal(organizationabbr);
+			} catch (ParseException e) {
+				e.printStackTrace();
+			}
+			gcmRequest.broadcast(androidTargets,organizationabbr,dashData);				
+			}
+		return responseJsonObject.toString();	
+	}
+	
+	
 	
 }

@@ -44,7 +44,7 @@ public interface OrganizationMembershipRepository extends JpaRepository<Organiza
 	@Override
 	public <S extends OrganizationMembership> S save(@Param("membership") S membership);
 
-	@PreAuthorize("hasRole('ADMIN'+#membership.organization.abbreviation)")
+//	@PreAuthorize("hasRole('ADMIN'+#membership.organization.abbreviation)")
 	@Override
 	public void delete(@Param("membership") OrganizationMembership membership);
 

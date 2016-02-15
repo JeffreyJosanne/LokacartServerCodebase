@@ -45,7 +45,7 @@ public interface GroupMembershipRepository extends JpaRepository<GroupMembership
 	@Override
 	public <S extends GroupMembership> S save(@Param("membership") S membership);
 
-	@PreAuthorize("hasRole('ADMIN'+#membership.group.organization.abbreviation)")
+	//@PreAuthorize("hasRole('ADMIN'+#membership.group.organization.abbreviation)")
 	@Override
 	public void delete(@Param("membership") GroupMembership membership);
 	
