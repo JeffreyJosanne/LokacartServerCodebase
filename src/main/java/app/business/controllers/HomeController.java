@@ -203,7 +203,6 @@ public class HomeController {
 		List <String> androidTargets = getTargetDevices(organization);
 		if(androidTargets.size()>0) {
 			GcmRequest gcmRequest = new GcmRequest();
-			gcmRequest.broadcast(user.getName()+" would like to be a member", "New Member Request", androidTargets,1,user.getUserId());
 			HashMap<String, Integer> dashData = null;
 			try {
 				dashData = dashBoardLocal(orgabbr);
