@@ -111,7 +111,7 @@ public class RestAuthenticationController {
 	
 	public HashMap<String, Integer> dashBoardLocal(String orgabbr) throws ParseException {
 
-		Organization organization = organizationService.getOrganizationByAbbreviation("Test2");
+		Organization organization = organizationService.getOrganizationByAbbreviation(orgabbr);
 		Group g= organizationService.getParentGroup(organization);
 		List<Message> messageapppro=messageService.getMessageListByOrderStatus(g, "binary", "processed");
 		List<Message> messageappnew=messageService.getMessageListByOrderStatus(g, "binary", "saved");
@@ -192,11 +192,38 @@ public class RestAuthenticationController {
 	}
 	
 	
-	
-	
-	
-	
-	
+	@RequestMapping(value = "/versioncheckadmin",method = RequestMethod.GET)
+	public String checkVersionAdmin (@RequestParam(value="version")String version) {
+		int id=2;
+		float appVersion = Float.parseFloat(version);
+		JSONObject responseJsonObject = new JSONObject();
+		VersionCheck currentVersion = versionCheckRepository.findOne(id);
+		float curVersion = currentVersion.getVersion();
+		int curMandatory = currentVersion.getMandatory();
+		if (curVersion <= appVersion) {
+			try {
+				responseJsonObject.put("response", "0");
+			} catch (JSONException e) {
+				e.printStackTrace();
+			}
+		}
+		else if ((curVersion > appVersion) && (curMandatory == 0) ) {
+			try {
+				responseJsonObject.put("response", "1");
+			} catch (JSONException e) {
+				e.printStackTrace();
+			}
+		}
+		else if ((curVersion > appVersion) && (curMandatory == 1) ) {
+			try {
+				responseJsonObject.put("response", "2");
+			} catch (JSONException e) {
+				e.printStackTrace();
+			}
+		}
+		return responseJsonObject.toString();
+	}
+
 	@RequestMapping(value = "/versioncheck",method = RequestMethod.GET)
 	public String checkVersion (@RequestParam(value="version")String version) {
 		int id=1;
@@ -296,12 +323,13 @@ public class RestAuthenticationController {
 			return responseJsonObject.toString();
 		}*/
 		if (phonenumber != null) {
-			String authId = "MAYMRJYJZHYZFKYJHMMZ";
-			String authToken = "YjRlZDM5ZTYzNzA1Yjk4MDgwOTBkNDNmOGQyYmM4";
+			/*TODO Move to Util class. No time */
+			String authId = "MANZBINJLKOTI0NWVHZD";
+			String authToken = "OWU2NDYyOTEzOGJkODBhZWU1ZjI0MjhlZDgxMWMw";
 			RestAPI api = new RestAPI(authId, authToken, "v1");
 			String otp=randomString(4);
 			LinkedHashMap<String, String> parameters = new LinkedHashMap<String, String>();
-			parameters.put("src", "919916731832");
+			parameters.put("src", "919322727415");
 			parameters.put("dst",phonenumber);
 			parameters.put("text", "Hello from Lokacart! \nYour OTP is: " + otp );
 			parameters.put("method", "GET");
@@ -324,6 +352,24 @@ public class RestAuthenticationController {
 		        }
 			return responseJsonObject.toString();
 			
+		}
+		else if(phonenumber==null && email != null)
+		{
+			String otp=randomString(4);
+			int status=0;
+			if((status=SendMail.sendMail(email, "Cottage Industry App OTP" , "Your OTP is: " + otp ))==1)
+				response.put("text", "Otp has been sent to your email");
+			//IVRUtils.sendSMS(phonenumber, otp, null , null);
+			response.put("otp",otp);
+			try {
+				responseJsonObject.put("otp", otp);
+				responseJsonObject.put("organizations",orgArray);
+				if(status==1)
+					responseJsonObject.put("text", "Otp has been sent to your email");
+			} catch (JSONException e) {
+				e.printStackTrace();
+			}
+			return responseJsonObject.toString();
 		}
 		else
 		{
@@ -641,15 +687,42 @@ public class RestAuthenticationController {
 		{
 			String otp=randomString(4);
 			int status=0;
+			/*
 			String email=userPhoneNumber.getUser().getEmail();
 			if((status=SendMail.sendMail(email, "Cottage Industry App OTP" , "Your OTP is: " + otp ))==1)
-				response.put("text", "Otp has been sent to your email");
+			*/
+			status=1;
+			/* TODO move to Util class. No time*/
+			String authId = "MANZBINJLKOTI0NWVHZD";
+			String authToken = "OWU2NDYyOTEzOGJkODBhZWU1ZjI0MjhlZDgxMWMw";
+			RestAPI api = new RestAPI(authId, authToken, "v1");
+			
+			LinkedHashMap<String, String> parameters = new LinkedHashMap<String, String>();
+			parameters.put("src", "919321176165");
+			parameters.put("dst",phonenumber);
+			parameters.put("text", "Hello from Lokacart! \nYour OTP is: " + otp );
+			parameters.put("method", "GET");
+			 try {
+		            MessageResponse msgResponse = api.sendMessage(parameters);
+		            System.out.println(msgResponse);
+		            System.out.println("Api ID : " + msgResponse.apiId);
+		            System.out.println("Message : " + msgResponse.message);	
+		            if (msgResponse.serverCode == 202) {
+		                System.out.println("Message UUID : " + msgResponse.messageUuids.get(0).toString());
+						response.put("text", "OTP SMS requested");
+
+		            } else {
+		                System.out.println(msgResponse.error);
+		            }
+		        } catch (PlivoException e) {
+		            System.out.println(e.getLocalizedMessage());
+		        }
 			//IVRUtils.sendSMS(phonenumber, otp, null , null);
 			response.put("otp",otp);
 			try {
 				responseJsonObject.put("otp", otp);
-				if(status==1)
-				responseJsonObject.put("text", "Otp has been sent to your email");	
+				//if(status==1)
+				//responseJsonObject.put("text", "Otp has been sent to your email");	
 			} catch (JSONException e) {
 				e.printStackTrace();
 			}

@@ -110,7 +110,7 @@ public class OrderRestController {
 	
 		public HashMap<String, Integer> dashBoardLocal(String orgabbr) throws ParseException {
 
-		Organization organization = organizationService.getOrganizationByAbbreviation("Test2");
+		Organization organization = organizationService.getOrganizationByAbbreviation(orgabbr);
 		Group g= organizationService.getParentGroup(organization);
 		List<Message> messageapppro=messageService.getMessageListByOrderStatus(g, "binary", "processed");
 		List<Message> messageappnew=messageService.getMessageListByOrderStatus(g, "binary", "saved");
@@ -223,7 +223,7 @@ public class OrderRestController {
 			e.printStackTrace();
 		}
 		catch(Exception e1) {
-			System.out.println("Insufficent stock");
+			e1.printStackTrace();
 			response.put("status", "Failure");
 			String error = new String();
 			JSONArray errorArray = new JSONArray();
@@ -376,6 +376,50 @@ public class OrderRestController {
 		}
 		if(orderItemsJSON!=null)
 		{
+			ArrayList <String> errorProduct = new ArrayList<String> ();
+			try {
+			if(organization.getStockManagement() == true) {
+				//Quantity verification
+				JSONArray orderProducts = jsonObject.getJSONArray("orderItems");
+				for (int i = 0; i < orderProducts.length(); i++) {
+					  
+					JSONObject row = orderProducts.getJSONObject(i);
+				    String productname=row.getString("name");
+				    float productQuantity =(float)row.getDouble("quantity");
+				    Product product=productService.getProductByNameAndOrg(productname,organization);
+				    float currentQuantity = product.getQuantity();
+				    if (currentQuantity < productQuantity) {
+				    	errorProduct.add(product.getName());
+				    }
+				}
+				if(!errorProduct.isEmpty()){
+					throw new Exception();
+				}
+				}
+			} catch (JSONException e2) {
+				e2.printStackTrace();
+			}
+			catch(Exception e1) {
+				e1.printStackTrace();
+				try {
+					response.put("status", "Failure");
+				} catch (JSONException e) {
+					e.printStackTrace();
+				}
+				String error = new String();
+				JSONArray errorArray = new JSONArray();
+				Iterator <String> iterator = errorProduct.iterator();
+				while(iterator.hasNext()) {
+				//	error = error + iterator.next() +", ";
+					errorArray.put(iterator.next());
+				}
+				try {
+					response.put("error", errorArray.toString());
+				} catch (JSONException e) {
+					e.printStackTrace();
+				}
+				return response.toString();
+			}
 			for( OrderItem orderitem : order.getOrderItems())
 			{
 				orderItemRepository.delete(orderitem);
@@ -480,7 +524,7 @@ public class OrderRestController {
 		JSONArray processedArray = new JSONArray();
 		JSONArray cancelledArray = new JSONArray();
 		Organization organization =organizationService.getOrganizationByAbbreviation(orgabbr);
-		List<Order> orderList = orderService.getOrderByOrganization(organization);
+		List<Order> orderList = orderService.getOrderByOrganizationSorted(organization);
 		Iterator <Order> iterator = orderList.iterator();
 		while(iterator.hasNext()) {
 			Order order = iterator.next();
@@ -531,9 +575,11 @@ public class OrderRestController {
 	{
 		JSONObject jsonResponseObject = new JSONObject();
 		Organization organization =organizationService.getOrganizationByAbbreviation(orgabbr);
-		List<Order> orderList = orderService.getOrderByOrganizationSaved(organization);
+		List<Order> orderList = orderService.getOrderByOrganizationSavedSorted(organization);
 		JSONArray orderArray = new JSONArray();
 		Iterator<Order> iterator = orderList.iterator();
+		Boolean stockManagement = organization.getStockManagement();
+	
 		while(iterator.hasNext())
 		{
 			JSONObject orderObject = new JSONObject();
@@ -555,6 +601,8 @@ public class OrderRestController {
 				
 						item.put("productname", orderItem.getProduct().getName());
 						item.put("quantity", Float.toString(orderItem.getQuantity()));
+						Product product = orderItem.getProduct();
+						item.put("stockQuantity", product.getQuantity());
 						item.put("rate", Float.toString(orderItem.getUnitRate()));
 						items.put(item);
 					} catch (JSONException e) {
@@ -571,6 +619,7 @@ public class OrderRestController {
 		}
 		try {
 			jsonResponseObject.put("orders",orderArray);
+			jsonResponseObject.put("stockManagement", stockManagement.toString());
 		} catch (JSONException e) {
 			e.printStackTrace();
 		}
@@ -583,7 +632,7 @@ public class OrderRestController {
 	{
 		
 		Organization organization =organizationService.getOrganizationByAbbreviation(orgabbr);
-		List<Order> orderList = orderService.getOrderByOrganizationProcessed(organization);
+		List<Order> orderList = orderService.getOrderByOrganizationProcessedSorted(organization);
 		JSONObject jsonResponseObject = new JSONObject();
 		JSONArray orderArray = new JSONArray();
 		Iterator<Order> iterator = orderList.iterator();
@@ -605,6 +654,8 @@ public class OrderRestController {
 					OrderItem orderItem = iter.next();
 					JSONObject item = new JSONObject();
 					try {
+						Product product = orderItem.getProduct();
+						item.put("stockQuantity", product.getQuantity());
 						item.put("productname", orderItem.getProduct().getName());
 						item.put("quantity", Float.toString(orderItem.getQuantity()));
 						item.put("rate", Float.toString(orderItem.getUnitRate()));
@@ -635,7 +686,7 @@ public class OrderRestController {
 	{
 		
 		Organization organization =organizationService.getOrganizationByAbbreviation(orgabbr);
-		List<Order> orderList = orderService.getOrderByOrganizationCancelled(organization);
+		List<Order> orderList = orderService.getOrderByOrganizationCancelledSorted(organization);
 		JSONObject jsonResponseObject = new JSONObject();
 		JSONArray orderArray = new JSONArray();
 		Iterator<Order> iterator = orderList.iterator();
@@ -687,7 +738,7 @@ public class OrderRestController {
 	{
 		
 		Organization organization =organizationService.getOrganizationByAbbreviation(orgabbr);
-		List<Order> orderList = orderService.getOrderByOrganizationRejected(organization);
+		List<Order> orderList = orderService.getOrderByOrganizationRejectedSorted(organization);
 		JSONObject jsonResponseObject = new JSONObject();
 		JSONArray orderArray = new JSONArray();
 		Iterator<Order> iterator = orderList.iterator();

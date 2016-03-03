@@ -44,6 +44,7 @@ public class ProductTypeRestController {
 		List<ProductType> productTypeList=productTypeService.getProductTypeListByOrgAbbr(orgabbr);
 		List<Product> productList = productService.getProductList(organizationService.getOrganizationByAbbreviation(orgabbr));
 		HashMap<String, List<HashMap<String, String>>> productTypeMap = new HashMap<String, List<HashMap<String, String>>>();
+		Boolean stockManagement = organizationService.getOrganizationByAbbreviation(orgabbr).getStockManagement();
 		for (ProductType ptype: productTypeList)
 		{
 			//List<Object[]> iter= new ArrayList<Object[]>();
@@ -59,6 +60,7 @@ public class ProductTypeRestController {
 					map.put("quantity", Float.toString(product.getQuantity()));
 					map.put("unitRate", Float.toString(product.getUnitRate()));
 					map.put("imageUrl", product.getImageUrl());
+					map.put("stockManagement", stockManagement.toString());
 					Listmap.add(map);
 				}
 			}
@@ -81,6 +83,8 @@ public class ProductTypeRestController {
 			productListJsonArray = jsonObject.getJSONArray("product_list");
 			responseJsonObject.put("status", "updated");
 			Organization organization= organizationRepository.findOne(org_id); //Finding organization of the product name
+			Boolean stockManagement = organization.getStockManagement();
+			responseJsonObject.put("stockManagement",stockManagement.toString());
 			for (int i=0;i<productListJsonArray.length();i++)
 			{
 				 try {
@@ -97,15 +101,15 @@ public class ProductTypeRestController {
 					{
 						Product product = productService.getProductByNameAndOrg(product_name, organization); 
 						JSONObject up_product= new JSONObject();
-						if(price != product.getUnitRate())
-						{
+						
 							flag=1;
 							up_product.put("product_name", product.getName());
 							up_product.put("price", product.getUnitRate());
+							up_product.put("quantity", product.getQuantity());
 							proArray.put(up_product);
 							responseJsonObject.put("status", "updated");
 							responseJsonObject.put("products", proArray);
-						}
+						
 					}
 				} catch (JSONException e) {
 					e.printStackTrace();

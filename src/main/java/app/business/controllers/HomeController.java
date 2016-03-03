@@ -67,7 +67,7 @@ public class HomeController {
 	
 	public HashMap<String, Integer> dashBoardLocal(String orgabbr) throws ParseException {
 
-		Organization organization = organizationService.getOrganizationByAbbreviation("Test2");
+		Organization organization = organizationService.getOrganizationByAbbreviation("orgabbr");
 		Group g= organizationService.getParentGroup(organization);
 		List<Message> messageapppro=messageService.getMessageListByOrderStatus(g, "binary", "processed");
 		List<Message> messageappnew=messageService.getMessageListByOrderStatus(g, "binary", "saved");
