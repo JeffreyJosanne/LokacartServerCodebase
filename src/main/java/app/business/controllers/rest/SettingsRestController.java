@@ -202,5 +202,61 @@ public class SettingsRestController {
 		return jsonResponseObject.toString();
 	}
 	
+	@RequestMapping(value="/appsettingsview", method=RequestMethod.GET, produces = "application/json")
+	@PreAuthorize("hasRole('ADMIN'+#org)")
+	@Transactional
+	public @ResponseBody String viewAppSettings(@PathVariable String org, @RequestParam String number) {
+		JSONObject jsonResponseObject = new JSONObject();
+		Boolean stockManagement = null;
+		Boolean autoApprove = null;
+		try{
+			Organization organization = organizationService.getOrganizationByAbbreviation(org);
+			stockManagement = organization.getStockManagement();
+			autoApprove = organization.getAutoApprove();
+			jsonResponseObject.put("stockManagement", stockManagement);
+			jsonResponseObject.put("autoApprove", autoApprove);
+			jsonResponseObject.put("response", "success");
+		}
+		catch(Exception e){
+			e.printStackTrace();
+		}
+	return jsonResponseObject.toString();
+	}
+	
+	@RequestMapping(value="/appsettingsupdate", method=RequestMethod.POST, produces = "application/json")
+	@PreAuthorize("hasRole('ADMIN'+#org)")
+	@Transactional
+	public @ResponseBody String changeAppSettings(@PathVariable String org, @RequestBody String requestBody) {
+		JSONObject jsonResponseObject = new JSONObject();
+		Boolean stockManagement, autoApprove;
+		Organization organization = organizationService.getOrganizationByAbbreviation(org);
+		try{
+			JSONObject object = new JSONObject(requestBody);
+			stockManagement = object.getBoolean("stockManagement");
+			autoApprove = object.getBoolean("autoApprove");
+			organization.setStockManagement(stockManagement);
+			organization.setAutoApprove(autoApprove);
+		}
+		catch(Exception e) {
+			e.printStackTrace();
+			try {
+				jsonResponseObject.put("response", "failure");
+			} catch (JSONException e1) {
+				e1.printStackTrace();
+			}
+			return jsonResponseObject.toString();
+		}
+		
+		try {
+			jsonResponseObject.put("response", "Successfully updated");
+		} catch (JSONException e) {
+			e.printStackTrace();
+		}
+	return jsonResponseObject.toString();
+	}
+	
 }
+
+
+
 
