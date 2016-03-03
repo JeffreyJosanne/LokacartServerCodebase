@@ -34,7 +34,7 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
 	@Override
 	public List<Product> findAll(Sort sort);
 
-	@PreAuthorize("hasRole('ADMIN'+#product.productType.organization.abbreviation)")
+//	@PreAuthorize("hasRole('ADMIN'+#product.productType.organization.abbreviation)")
 	@Override
 	public <S extends Product> S save(@Param("product") S product);
 
