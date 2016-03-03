@@ -14,5 +14,8 @@ public interface OrderItemProjectionApp {
 	
 	@Value("#{target.getProduct().getProductId()}")
 	int getProductId();
+	
+	@Value("#{target.getProduct().getQuantity()}")
+	float getProductQuantity();
 
 }
