@@ -24,8 +24,7 @@ website.controller("AppMessageCtrl", function($window, $resource, $scope, $route
 			$scope.orderItem.order = orderItem.order;
 			$scope.orderItem.unitRate = orderItem.unitRate;
 			$scope.productid = orderItem.productid;
-		//	console.log(" cur qty: "+orderItem.curQty);
-		//	console.log("prod id: "+orderItem.productid);
+	
 			
 			AddOrderItem.save($scope.orderItem, function() {});
 			
@@ -115,17 +114,13 @@ website.controller("AppMessageCtrl", function($window, $resource, $scope, $route
 			});
 				
 				Product.get({}, function(product){
-					//$scope.ProductID = product.productid;
 					console.log("product id: "+productId);
 					console.log("product name: "+product.name);
 					product.quantity = parseFloat(product.quantity);
 
 					$scope.prodId = productId;
 					$scope.editproduct = ProductEdit.get({id:$scope.prodId},function(){
-/*						console.log("product quantity: "+product.quantity);
-						console.log("item quantiy: "+items[i].quantity);*/
 						$scope.editproduct.quantity = product.quantity + items[i].quantity;
-						//console.log("new quantity: "+product.quantity);
 						$scope.editproduct.$update({id:$scope.prodId},function(){
 							product.quantity = $scope.editproduct.quantity;
 							console.log("Done updating after delete...");
@@ -370,7 +365,14 @@ $("#page-content").on("click", "#add-saved-app-order-items", function () {
 $("#page-content").on("click", ".remove-saved-app-order-item", function () {
 	/* Get required values from modal */
 	var hashKey = $.trim($(this).val());
-	var status = document.getElementById("savedAppHidden"+hashKey).getAttribute("value");
+	var status;
+	try{
+	status = document.getElementById("savedAppHidden"+hashKey).getAttribute("value");
+	}
+	catch(Exception) {
+		status=null;
+	}
+	console.log("inside remove");
 	var productName = document.getElementById("savedAppHiddenProductName"+hashKey).getAttribute("value");
 	console.log(productName);
 	var productId = document.getElementById(productName).getAttribute("value");
@@ -385,11 +387,19 @@ $("#page-content").on("click", ".remove-saved-app-order-item", function () {
 	}
 	else{
 		/* Manipulating HTML to respond that order Item is removed */
-		$("#row"+hashKey).remove();
-		
+		$("#savedAppAddedRow"+hashKey).remove();
 		/* Remove order item from the queue */
 		angular.element($("#add-saved-app-order-items")).scope().removeOrderItemFromQueue(hashKey);
 	}
+	/*var target = $(this).attr("href");
+	//$(this).removeData('view-saved-app-message-modal');
+	console.log("going to cleae");
+	$(this).removeData('view-saved-app-message-modal');
+	console.log("cleared and reloaidng")
+	$("#view-saved-app-message-modal .modal-body").load(target, function() { 
+        $("#view-saved-app-message-modal").modal("show"); 
+   });
+	console.log("reloaded");*/
 });
 
 $("#page-content").on("click", "#process-saved-app-order", function(e) {

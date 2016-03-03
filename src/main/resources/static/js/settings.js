@@ -39,10 +39,10 @@ website.controller("SettingsCtrl", function($scope, $http, $routeParams, $window
 	$scope.languageUrl  = [];
 
 	$scope.selectOptions = [{
-		name: 'Disable',
+		name: 'Disabled',
 		value: '0'
 	}, {
-		name: 'Enable',
+		name: 'Enabled',
 		value: '1'
 	}];
 
