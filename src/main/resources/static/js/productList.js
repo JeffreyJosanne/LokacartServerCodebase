@@ -227,7 +227,7 @@ website.controller("ProductsCtrl",function($window, $scope, $http, $route, $loca
 				newprice = $.trim($('#update-price-input').val());
 				newname  = $.trim($('#update-product-name-input').val());
 				newQty = $.trim($('#update-product-quantity-input').val());
-				
+				console.log("new qty: "+newQty);
 				if(! $.isNumeric(newprice) && ! $.isNumeric(newQty)){
 					createAlert("Invalid Input","Enter valid Price input and Quantity input as numerical value.");
 				}
@@ -241,11 +241,11 @@ website.controller("ProductsCtrl",function($window, $scope, $http, $route, $loca
 					$scope.editproduct = ProductEdit.get({id:$scope.id},function(){
 						$scope.editproduct.unitRate = newprice;
 						$scope.editproduct.name = newname;
-						$scope.editproduct.newQty = newQty;
+						$scope.editproduct.quantity = newQty;
 						$scope.editproduct.$update({id:$scope.id},function(){
 							product.unitRate = $scope.editproduct.unitRate;
 							product.name = $scope.editproduct.name;
-							product.quantity = $scope.editproduct.newQty;
+							product.quantity = $scope.editproduct.quantity;
 						});
 					});
 					

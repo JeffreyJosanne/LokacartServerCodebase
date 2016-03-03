@@ -144,6 +144,7 @@ public class Order implements Serializable {
 			temp.put("unitrate",Float.toString(orderItem.getUnitRate()));
 			temp.put("productname",orderItem.getProduct().getName());
 			temp.put("productId", Integer.toString(orderItem.getProduct().getProductId()));
+			temp.put("stockquantity",Float.toString(orderItem.getProduct().getQuantity()));
 			response.add(temp);
 		}
 		return response;
