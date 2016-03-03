@@ -59,6 +59,15 @@ public class OrganizationMembershipService {
 		
 		return origanizationMembershipRepository.findByOrganizationAndStatus(organization, status);
 	}
+	
+	public List<OrganizationMembership> getOrganizationMembershipListByStatusSorted(Organization organization, int status){
+		
+		return origanizationMembershipRepository.findByOrganizationAndStatusOrderByOrganizationMembershipIdDesc(organization, status);
+	}
+	
+	
+	
+	
 	public int getOrganizationMembershipStatus(User user,Organization organization){
 		
 		OrganizationMembership organizationMembership= origanizationMembershipRepository.findByUserAndOrganization(user, organization);
