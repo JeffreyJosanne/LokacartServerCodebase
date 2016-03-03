@@ -26,6 +26,9 @@ public interface OrderProjectionApp {
 	@Value("#{target.getMessage().getTime()}")
 	Timestamp getRegisteredTime();
 	
+	@Value("#{target.getOrganization().getStockManagement()}")
+	Boolean getStockManagement();
+	
 	@Value("#{target.getOrderItemsHashMap()}")
 	List<HashMap<String,String>> getOrderItems();
 	
