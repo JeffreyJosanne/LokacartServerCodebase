@@ -79,7 +79,7 @@ public class ManageUsersRestController {
 		JSONArray jsonArray = new JSONArray();
 		Organization organization = organizationService.getOrganizationByAbbreviation(org);
 
-		List<OrganizationMembership> membershipList = organizationMembershipService.getOrganizationMembershipListByStatus(organization, 1);
+		List<OrganizationMembership> membershipList = organizationMembershipService.getOrganizationMembershipListByStatusSorted(organization, 1);
 
 		for(OrganizationMembership membership : membershipList)
 		{
@@ -133,7 +133,7 @@ public class ManageUsersRestController {
 		JSONObject jsonResponseObject = new JSONObject();
 		JSONArray jsonArray = new JSONArray();
 		Organization organization = organizationService.getOrganizationByAbbreviation(org);
-		List<OrganizationMembership> membershipList = organizationMembershipService.getOrganizationMembershipListByStatus(organization, 0);
+		List<OrganizationMembership> membershipList = organizationMembershipService.getOrganizationMembershipListByStatusSorted(organization, 0);
 		for(OrganizationMembership membership : membershipList)
 		{
 

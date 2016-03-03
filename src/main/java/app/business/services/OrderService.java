@@ -25,16 +25,32 @@ public class OrderService {
 		return orderRepository.findByOrganizationAndStatus(organization, "processed");
 	}
 	
+	public List<Order> getOrderByOrganizationProcessedSorted(Organization organization) {
+		return orderRepository.findByOrganizationAndStatusOrderByOrderIdDesc(organization, "processed");
+	}
+	
 	public List<Order> getOrderByOrganizationSaved(Organization organization) {
 		return orderRepository.findByOrganizationAndStatus(organization, "saved");
+	}
+	
+	public List<Order> getOrderByOrganizationSavedSorted(Organization organization) {
+		return orderRepository.findByOrganizationAndStatusOrderByOrderIdDesc(organization, "saved");
 	}
 	
 	public List<Order> getOrderByOrganizationCancelled(Organization organization) {
 		return orderRepository.findByOrganizationAndStatus(organization, "cancelled");
 	}
-
+	
+	public List<Order> getOrderByOrganizationCancelledSorted(Organization organization) {
+		return orderRepository.findByOrganizationAndStatusOrderByOrderIdDesc(organization, "cancelled");
+	}
+	
 	public List<Order> getOrderByOrganizationRejected(Organization organization) {
 		return orderRepository.findByOrganizationAndStatus(organization, "rejected");
+	}
+	
+	public List<Order> getOrderByOrganizationRejectedSorted(Organization organization) {
+		return orderRepository.findByOrganizationAndStatusOrderByOrderIdDesc(organization, "rejected");
 	}
 
 	public List<Order> getOrderByGroupProcessed(Group group)
@@ -113,5 +129,9 @@ public class OrderService {
 	}
 	public List<Order> getOrderByOrganization(Organization organization) {
 		return orderRepository.findByOrganization(organization); 
+	}
+	
+	public List<Order> getOrderByOrganizationSorted(Organization organization) {
+		return orderRepository.findByOrganizationOrderByOrderIdDesc(organization); 
 	}
 }
