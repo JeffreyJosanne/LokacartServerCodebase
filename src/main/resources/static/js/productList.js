@@ -281,6 +281,20 @@ website.controller("ProductsCtrl",function($window, $scope, $http, $route, $loca
 			});
 		}
 		
+		
+		$scope.downloadSpreadsheet = function () {
+			var abbr = $('#organizationAbbr').val();
+			console.log(API_ADDR+'web/'+abbr+'/generatesheet');
+			$http.get(API_ADDR+'web/'+abbr+'/generatesheet')
+			.success(function () {
+				console.log("success!");
+			})
+			.error(function() {
+				console.log("error");
+			});	
+		}
+		
+		
 		$scope.globalEnable = function() {
 			var abbr = $('#organizationAbbr').val();
 			var toggleStatus=1;
