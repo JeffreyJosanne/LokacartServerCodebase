@@ -54,7 +54,7 @@ public class DashboardRestController {
 	@RequestMapping(value = "/dashboard",method = RequestMethod.GET )
 	public @ResponseBody HashMap<String, Integer> dashBoard(@RequestParam(value="orgabbr") String orgabbr) throws ParseException {
 		System.out.println(orgabbr+"in dahsboard function");
-		Organization organization = organizationService.getOrganizationByAbbreviation("Test2");
+		Organization organization = organizationService.getOrganizationByAbbreviation(orgabbr);
 		Group g= organizationService.getParentGroup(organization);
 		List<Message> messageapppro=messageService.getMessageListByOrderStatus(g, "binary", "processed");
 		List<Message> messageappnew=messageService.getMessageListByOrderStatus(g, "binary", "saved");

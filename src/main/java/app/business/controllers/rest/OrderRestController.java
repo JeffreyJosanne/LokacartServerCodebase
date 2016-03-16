@@ -280,7 +280,7 @@ public class OrderRestController {
 		order.setMessage(bmessage);
 		orderRepository.save(order);
 		response.put("orderId",new Integer(order.getOrderId()).toString());
-		response.put("Status", "Success");
+		response.put("status", "Success");
 		String email=order.getMessage().getUser().getEmail();
 		List <String> androidTargets = getTargetDevices(organization);
 		if(androidTargets.size()>0) {
@@ -447,7 +447,7 @@ public class OrderRestController {
 			order.setOrderItems(orderItems);
 		}
 		try {
-			response.put("Status", "Success");
+			response.put("status", "Success");
 			order.setStatus(status);
 			if(status.equals("cancelled"))
 			{

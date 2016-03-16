@@ -96,6 +96,14 @@ public class ManageUsersRestController {
 				String role  = userService.getUserRole(user, organization);
 				String address = user.getAddress();
 				Timestamp time= user.getTime();
+				String lastname = "",pincode ="";
+				try {
+					lastname = user.getLastname();
+					pincode = user.getPincode();
+				}
+				catch(Exception e) {
+					
+				}
 				JSONObject object = new JSONObject();
 				try {
 				object.put("userID", manageUserID);
@@ -105,6 +113,14 @@ public class ManageUsersRestController {
 				object.put("role", role);
 				object.put("address", address);
 				object.put("time", time);
+				try{
+					if(!lastname.equals("0"))
+					object.put("lastname", lastname);
+					if(!pincode.equals("0"))
+					object.put("pincode", pincode);
+					}
+					catch(Exception e ){
+					}
 				}
 				catch(Exception e) {
 					e.printStackTrace();
@@ -149,6 +165,14 @@ public class ManageUsersRestController {
 				String role  = userService.getUserRole(user, organization);
 				String address = user.getAddress();
 				Timestamp time = user.getTime();
+				String lastname = null, pincode=null;
+				try{
+				 lastname = user.getLastname();
+				 pincode = user.getPincode();
+				}
+				catch(Exception e ) {
+					
+				}
 				// Create the UserManage Object and add it to the list
 				JSONObject object = new JSONObject();
 				try {
@@ -159,6 +183,11 @@ public class ManageUsersRestController {
 					object.put("role", role);
 					object.put("address", address);
 					object.put("time", time);
+					if (lastname != null && !lastname.equals("0"))
+					object.put("lastname", lastname);
+					if(pincode != null && !pincode.equals("0"))
+					object.put("pincode", pincode);
+				
 					}
 					catch(Exception e) {
 						e.printStackTrace();
@@ -208,7 +237,7 @@ public class ManageUsersRestController {
 				String role  = userService.getUserRole(user, organization);
 				String address = user.getAddress();
 				Timestamp time= user.getTime();
-
+			
 				// Create the UserManage Object and add it to the list
 				UserManage userrow = new UserManage(manageUserID, name, email, phone, role, address, time);
 				userrows.add(userrow);
@@ -263,7 +292,7 @@ public class ManageUsersRestController {
 		JSONObject object = null;
 		JSONObject responseJsonObject = new JSONObject();
 		// Get the input parameters from AngularJS
-		String name = null, email = null, address = null, role =null, pincode = null, phonenumber =null;
+		String name = null, email = null, address = null, role =null, pincode = null, phonenumber =null, lastname = null;
 		boolean isAdmin = false, isPublisher = false;
 		int userId=0, isPubInt =0, isAdminInt =0;
 		try{
@@ -274,6 +303,12 @@ public class ManageUsersRestController {
 		address = object.getString("address");
 		pincode  = object.getString("pincode");
 		phonenumber = object.getString("phone");
+		try {
+		lastname = object.getString("lastname");
+		}
+		catch(Exception e) {
+			
+		}
 		//role = object.getString("role");
 		isPubInt = Integer.parseInt(object.getString("isPublisher"));
 		if (isPubInt == 1) {
@@ -342,6 +377,8 @@ public class ManageUsersRestController {
 		user.setEmail(email);
 		user.setAddress(address);
 		user.setPincode(pincode);
+		if (lastname != null)
+		user.setLastname(lastname);
 		membership.setIsAdmin(isAdmin);
 		membership.setIsPublisher(isPublisher);
 		organizationMembershipService.addOrganizationMembership(membership);
