@@ -2,14 +2,20 @@ package app.business.controllers;
 
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
+import javax.activation.MimetypesFileTypeMap;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -29,6 +35,7 @@ import app.business.services.ProductService;
 import app.entities.Organization;
 import app.entities.Product;
 import app.entities.ProductType;
+import app.util.SpreadsheetParser;
 import app.util.Utils;
 
 @Controller
@@ -106,6 +113,68 @@ public class ProductsController {
 			productService.addProduct(product);
 		}
 		return null;
+	}
+	
+	@Transactional
+	@RequestMapping(value="/generatesheet", method=RequestMethod.GET,produces="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	@ResponseBody
+	public File generateSheet(@PathVariable String org/*, HttpServletResponse response*/) {
+		System.out.println("Controller hit");
+		Organization organization = organizationService.getOrganizationByAbbreviation(org);
+		//response.setHeader("Content-disposition","attachment; filename=" + organization.getAbbreviation()+"-product.xlsx");
+        
+
+		List<ProductType> productTypes = productService.getProductTypeList(organization);
+		List<Product> products = productService.getProductList(productTypes);
+		Iterator <Product> iterator = products.iterator();
+		List <String> prodNames = new ArrayList<String>();
+		List <Integer> prodId = new ArrayList<Integer>();
+		List <String> prodType = new ArrayList<String>();
+		List <Float> unitRate = new ArrayList<Float>();
+		List <Float> quantity = new ArrayList<Float>();
+
+		while(iterator.hasNext()) {
+			Product product = iterator.next();
+			prodNames.add(product.getName());
+			prodId.add(product.getProductId());
+			prodType.add(String.valueOf(product.getProductType().getName()));
+			unitRate.add(product.getUnitRate());
+			quantity.add(product.getQuantity());
+		}
+		File file = SpreadsheetParser.generateProductSheet(prodId, prodNames, prodType, unitRate, quantity, organization.getAbbreviation());
+		return file;
+		/*String mimeType = new MimetypesFileTypeMap().getContentType(organization.getAbbreviation()+"-product.xlsx");
+        System.out.println("MIME Type: "+mimeType);
+        response.setContentType(mimeType);
+        response.setContentLength((int) file.length());
+        
+		FileInputStream in = null;
+		try {
+			in = new FileInputStream(file);
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+		OutputStream out = null;
+		try {
+			out = response.getOutputStream();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		byte[] buffer= new byte[81920];
+		int length = 0;
+
+		try {
+			while ((length = in.read(buffer)) > 0){
+			     out.write(buffer, 0, length);
+			     System.out.println("length: "+length);
+			}
+			in.close();
+			out.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		*/
+
 	}
 
 }
